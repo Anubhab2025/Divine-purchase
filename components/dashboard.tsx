@@ -1,634 +1,1057 @@
-"use client"
+"use client";
 
-import { useWorkflow } from "@/lib/workflow-context"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  BarChart3,
-  CheckCircle2,
-  Clock3,
-  Layers,
-  TrendingUp,
-  Activity,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import {
   PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
+import {
+  Package,
+  Truck,
+  CheckCircle,
+  Clock,
+  Filter,
+  Download,
+  Eye,
   Calendar,
-  Users
-} from "lucide-react"
+  FileText,
+  TrendingUp,
+} from "lucide-react";
 
-export default function Dashboard() {
-  const { records } = useWorkflow()
+// === NEW DATA (DIFFERENT FROM MOCK) ===
+const inTransitData = [
+  {
+    erp: 892,
+    material: "MS Billet",
+    party: "JINDAL STEEL WORKS",
+    truck: "RJ14GA1234",
+    date: "02/11/2025",
+    qty: 120.5,
+  },
+  {
+    erp: 879,
+    material: "Ferro Chrome",
+    party: "TATA METALIKS",
+    truck: "WB19AB5678",
+    date: "02/11/2025",
+    qty: 45.2,
+  },
+  {
+    erp: 875,
+    material: "Silico Manganese",
+    party: "MAITHAN ALLOYS",
+    truck: "OR05CD9012",
+    date: "01/11/2025",
+    qty: 88.7,
+  },
+  {
+    erp: 861,
+    material: "Sponge Iron",
+    party: "RASHMI METALIKS",
+    truck: "CG07XY4455",
+    date: "01/11/2025",
+    qty: 67.3,
+  },
+  {
+    erp: 849,
+    material: "MS Scrap",
+    party: "BHUSHAN TRADERS",
+    truck: "MH12PQ8899",
+    date: "31/10/2025",
+    qty: 29.1,
+  },
+  {
+    erp: 837,
+    material: "Pig Iron",
+    party: "NEELACHAL ISPAT",
+    truck: "OD02LM3344",
+    date: "30/10/2025",
+    qty: 55.8,
+  },
+  {
+    erp: 824,
+    material: "MS Ingot",
+    party: "VANDANA STEELS",
+    truck: "CG04AB1122",
+    date: "29/10/2025",
+    qty: 41.6,
+  },
+  {
+    erp: 811,
+    material: "Ferro Silicon",
+    party: "IMFA LTD",
+    truck: "OR11JK5566",
+    date: "28/10/2025",
+    qty: 33.9,
+  },
+  {
+    erp: 799,
+    material: "MS Billet",
+    party: "ELECTROSTEEL",
+    truck: "WB25MN7788",
+    date: "27/10/2025",
+    qty: 95.4,
+  },
+  {
+    erp: 788,
+    material: "Sponge Iron",
+    party: "JAI BALAJI",
+    truck: "CG10EF9900",
+    date: "26/10/2025",
+    qty: 72.1,
+  },
+];
 
-  const stageCounts = Array.from({ length: 14 }, (_, i) => {
-    const stageNum = i + 1
-    return {
-      stage: stageNum,
-      pending: records.filter((r) => r.stage === stageNum && r.status === "pending").length,
-      completed: records.filter((r) => r.history.some((h) => h.stage === stageNum)).length,
-      total: records.filter((r) => r.stage === stageNum || r.history.some((h) => h.stage === stageNum)).length,
-    }
-  })
+const receivedData = [
+  {
+    erp: 891,
+    material: "MS Billet",
+    party: "JINDAL STEEL WORKS",
+    truck: "RJ14GA1234",
+    date: "02/11/2025",
+    qty: 120.5,
+  },
+  {
+    erp: 878,
+    material: "Ferro Chrome",
+    party: "TATA METALIKS",
+    truck: "WB19AB5678",
+    date: "01/11/2025",
+    qty: 45.2,
+  },
+  {
+    erp: 874,
+    material: "Silico Manganese",
+    party: "MAITHAN ALLOYS",
+    truck: "OR05CD9012",
+    date: "01/11/2025",
+    qty: 88.7,
+  },
+  {
+    erp: 860,
+    material: "Sponge Iron",
+    party: "RASHMI METALIKS",
+    truck: "CG07XY4455",
+    date: "31/10/2025",
+    qty: 67.3,
+  },
+  {
+    erp: 848,
+    material: "MS Scrap",
+    party: "BHUSHAN TRADERS",
+    truck: "MH12PQ8899",
+    date: "30/10/2025",
+    qty: 29.1,
+  },
+  {
+    erp: 836,
+    material: "Pig Iron",
+    party: "NEELACHAL ISPAT",
+    truck: "OD02LM3344",
+    date: "29/10/2025",
+    qty: 55.8,
+  },
+  {
+    erp: 823,
+    material: "MS Ingot",
+    party: "VANDANA STEELS",
+    truck: "CG04AB1122",
+    date: "28/10/2025",
+    qty: 41.6,
+  },
+  {
+    erp: 810,
+    material: "Ferro Silicon",
+    party: "IMFA LTD",
+    truck: "OR11JK5566",
+    date: "27/10/2025",
+    qty: 33.9,
+  },
+  {
+    erp: 798,
+    material: "MS Billet",
+    party: "ELECTROSTEEL",
+    truck: "WB25MN7788",
+    date: "26/10/2025",
+    qty: 95.4,
+  },
+  {
+    erp: 787,
+    material: "Sponge Iron",
+    party: "JAI BALAJI",
+    truck: "CG10EF9900",
+    date: "25/10/2025",
+    qty: 72.1,
+  },
+];
 
-  const totalRecords = records.length
-  const completedRecords = records.filter((r) => r.status === "completed").length
-  const pendingRecords = totalRecords - completedRecords
+const pendingData = [
+  {
+    erp: 701,
+    material: "MS Billet",
+    party: "JINDAL STEEL WORKS",
+    qty: 150,
+    rate: 48500,
+    pending: 150,
+    lifted: 0,
+    received: 0,
+    returned: 0,
+    cancelled: 0,
+  },
+  {
+    erp: 702,
+    material: "Sponge Iron",
+    party: "RASHMI METALIKS",
+    qty: 200,
+    rate: 28500,
+    pending: 180,
+    lifted: 20,
+    received: 20,
+    returned: 0,
+    cancelled: 0,
+  },
+  {
+    erp: 703,
+    material: "Ferro Chrome",
+    party: "TATA METALIKS",
+    qty: 50,
+    rate: 125000,
+    pending: 30,
+    lifted: 20,
+    received: 15,
+    returned: 5,
+    cancelled: 0,
+  },
+  {
+    erp: 704,
+    material: "MS Scrap",
+    party: "BHUSHAN TRADERS",
+    qty: 80,
+    rate: 32000,
+    pending: 80,
+    lifted: 0,
+    received: 0,
+    returned: 0,
+    cancelled: 0,
+  },
+  {
+    erp: 705,
+    material: "Silico Manganese",
+    party: "MAITHAN ALLOYS",
+    qty: 100,
+    rate: 78000,
+    pending: 70,
+    lifted: 30,
+    received: 25,
+    returned: 5,
+    cancelled: 0,
+  },
+];
 
-  // Calculate stage distribution
-  const stageDistribution = stageCounts.map(({ stage, total }) => ({
-    stage,
-    count: total,
-    percentage: totalRecords > 0 ? Math.round((total / totalRecords) * 100) : 0
-  })).filter(item => item.count > 0)
+const topMaterials = [
+  { rank: 1, material: "MS Billet", qty: 18950.5 },
+  { rank: 2, material: "Sponge Iron", qty: 14230.75 },
+  { rank: 3, material: "Ferro Chrome", qty: 8750.2 },
+  { rank: 4, material: "Silico Manganese", qty: 7210.4 },
+  { rank: 5, material: "MS Scrap", qty: 4855.3 },
+  { rank: 6, material: "Pig Iron", qty: 3900.1 },
+  { rank: 7, material: "MS Ingot", qty: 3200.8 },
+  { rank: 8, material: "Ferro Silicon", qty: 2100.6 },
+  { rank: 9, material: "TMT Bar", qty: 1800.9 },
+  { rank: 10, material: "Wire Rod", qty: 1500.25 },
+];
 
-  // Recent activity (last 7 days)
-  const recentRecords = records.filter(record => {
-    const recordDate = new Date(record.createdAt || Date.now())
-    const weekAgo = new Date()
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    return recordDate >= weekAgo
-  }).length
+const topVendors = [
+  { rank: 1, vendor: "JINDAL STEEL WORKS", qty: 18950.5 },
+  { rank: 2, vendor: "RASHMI METALIKS", qty: 14230.75 },
+  { rank: 3, vendor: "TATA METALIKS", qty: 8750.2 },
+  { rank: 4, vendor: "MAITHAN ALLOYS", qty: 7210.4 },
+  { rank: 5, vendor: "BHUSHAN TRADERS", qty: 4855.3 },
+  { rank: 6, vendor: "NEELACHAL ISPAT", qty: 3900.1 },
+  { rank: 7, vendor: "VANDANA STEELS", qty: 3200.8 },
+  { rank: 8, vendor: "IMFA LTD", qty: 2100.6 },
+  { rank: 9, vendor: "JAI BALAJI", qty: 1800.9 },
+  { rank: 10, vendor: "ELECTROSTEEL", qty: 1500.25 },
+];
 
-  // Performance metrics
-  const avgCompletionTime = totalRecords > 0 ? Math.round(totalRecords / 7) : 0 // Mock calculation
+const vendorBarData = topVendors.map((v) => ({
+  name: v.vendor.split(" ").slice(0, 2).join(" "),
+  qty: v.qty,
+}));
+const pieData = [
+  { name: "Complete", value: 88, color: "#10b981" },
+  { name: "Pending", value: 12, color: "#f59e0b" },
+];
+
+export default function PurchaseDashboard() {
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // Filter states
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [selectedParty, setSelectedParty] = useState("all");
+  const [selectedMaterial, setSelectedMaterial] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+
+  // Search states
+  const [inTransitSearch, setInTransitSearch] = useState("");
+  const [receivedSearch, setReceivedSearch] = useState("");
+  const [pendingSearch, setPendingSearch] = useState("");
+
+  // Sort states
+  const [inTransitSort, setInTransitSort] = useState({ key: "date", direction: "desc" });
+  const [receivedSort, setReceivedSort] = useState({ key: "date", direction: "desc" });
+  const [pendingSort, setPendingSort] = useState({ key: "erp", direction: "asc" });
+
+  // Compute unique values for filters
+  const allData = [...inTransitData, ...receivedData, ...pendingData];
+  const uniqueParties = [...new Set(allData.map(item => item.party))].sort();
+  const uniqueMaterials = [...new Set(allData.map(item => item.material))].sort();
+
+  // Helper function to parse date dd-mm-yyyy
+  const parseDate = (dateStr) => {
+    if (!dateStr) return null;
+    const [day, month, year] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  // Filtering function
+  const applyFilters = (data, dataType) => {
+    return data.filter((item) => {
+      // Date filter
+      if (dateFrom || dateTo) {
+        const itemDate = parseDate(item.date);
+        if (!itemDate) return false;
+        if (dateFrom) {
+          const fromDate = parseDate(dateFrom);
+          if (fromDate && itemDate < fromDate) return false;
+        }
+        if (dateTo) {
+          const toDate = parseDate(dateTo);
+          if (toDate && itemDate > toDate) return false;
+        }
+      }
+
+      // Party filter
+      if (selectedParty && selectedParty !== "all" && item.party !== selectedParty) return false;
+
+      // Material filter
+      if (selectedMaterial && selectedMaterial !== "all" && item.material !== selectedMaterial) return false;
+
+      // Status filter
+      if (selectedStatus && selectedStatus !== "all" && selectedStatus !== dataType) return false;
+
+      return true;
+    });
+  };
+
+  // Apply filters to data
+  const filteredInTransitData = applyFilters(inTransitData, "intransit");
+  const filteredReceivedData = applyFilters(receivedData, "received");
+  const filteredPendingData = applyFilters(pendingData, "pending");
+
+  // Sorting function
+  const sortData = (data, sortConfig) => {
+    return [...data].sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+
+      if (sortConfig.key === "date") {
+        aVal = parseDate(aVal);
+        bVal = parseDate(bVal);
+      } else if (typeof aVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+
+      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  };
+
+  // Apply sorting
+  const sortedInTransitData = sortData(filteredInTransitData, inTransitSort);
+  const sortedReceivedData = sortData(filteredReceivedData, receivedSort);
+  const sortedPendingData = sortData(filteredPendingData, pendingSort);
+
+  // Apply search
+  const searchData = (data, searchTerm) => {
+    if (!searchTerm) return data;
+    return data.filter((item) =>
+      item.erp.toString().includes(searchTerm.toLowerCase()) ||
+      item.material.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.party.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  const finalInTransitData = searchData(sortedInTransitData, inTransitSearch);
+  const finalReceivedData = searchData(sortedReceivedData, receivedSearch);
+  const finalPendingData = searchData(sortedPendingData, pendingSearch);
+
+  // Export to CSV function
+  const exportToCSV = (data, filename) => {
+    if (data.length === 0) return;
+
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => `"${row[header]}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Real-time overview of all purchase workflow stages
+    <div className="p-4 md:p-6 space-y-6 bg-gray-50 min-h-screen">
+      {/* Smart Filters */}
+      <Card className="border shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium">Smart Filters</CardTitle>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Refine your data view with advanced filtering options
           </p>
-        </div>
-        <div className="text-left sm:text-right">
-          <p className="text-sm text-muted-foreground">Last updated</p>
-          <p className="text-sm font-medium">{new Date().toLocaleTimeString()}</p>
-        </div>
-      </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="dd-mm-yyyy"
+                className="h-9 text-xs"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+              <span className="text-xs text-muted-foreground">to</span>
+              <Input
+                placeholder="dd-mm-yyyy"
+                className="h-9 text-xs"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </div>
+            <Select value={selectedParty} onValueChange={setSelectedParty}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="All Party Names" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Party Names</SelectItem>
+                {uniqueParties.map((party) => (
+                  <SelectItem key={party} value={party}>
+                    {party}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="All Materials" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Materials</SelectItem>
+                {uniqueMaterials.map((material) => (
+                  <SelectItem key={material} value={material}>
+                    {material}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="intransit">In-Transit</SelectItem>
+                <SelectItem value="received">Received</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 text-xs"
+              onClick={() => {
+                setDateFrom("");
+                setDateTo("");
+                setSelectedParty("all");
+                setSelectedMaterial("all");
+                setSelectedStatus("all");
+              }}
+            >
+              Clear All
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-          <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-          <TabsTrigger value="progress" className="text-xs sm:text-sm">Progress</TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs sm:text-sm">Analytics</TabsTrigger>
-          <TabsTrigger value="records" className="text-xs sm:text-sm">Records</TabsTrigger>
+      {/* Tabs */}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-11">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="purchase" className="text-xs sm:text-sm">
+            Purchase Data
+          </TabsTrigger>
+          <TabsTrigger value="intransit" className="text-xs sm:text-sm">
+            In-Transit
+          </TabsTrigger>
+          <TabsTrigger value="received" className="text-xs sm:text-sm">
+            Received
+          </TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6 mt-6">
-          {/* Summary Cards */}
+        {/* OVERVIEW TAB */}
+        <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Records
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Purchase Orders
                 </CardTitle>
-                <Layers className="w-4 h-4 text-muted-foreground" />
+                <FileText className="h-4 w-4 text-blue-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{totalRecords}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Active workflows
-                </p>
+                <div className="text-2xl font-bold">329</div>
+                <p className="text-xs text-muted-foreground">Active Orders</p>
               </CardContent>
             </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Pending
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Pending PO's
                 </CardTitle>
-                <Clock3 className="w-4 h-4 text-muted-foreground" />
+                <Clock className="h-4 w-4 text-orange-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{pendingRecords}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Awaiting action
-                </p>
+                <div className="text-2xl font-bold">32</div>
+                <p className="text-xs text-muted-foreground">Awaiting Action</p>
               </CardContent>
             </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Completed
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Completed PO's
                 </CardTitle>
-                <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+                <CheckCircle className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{completedRecords}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Successfully processed
-                </p>
+                <div className="text-2xl font-bold">297</div>
+                <p className="text-xs text-muted-foreground">Delivered</p>
               </CardContent>
             </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
                   Completion Rate
                 </CardTitle>
-                <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                <TrendingUp className="h-4 w-4 text-purple-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">
-                  {totalRecords > 0
-                    ? Math.round((completedRecords / totalRecords) * 100)
-                    : 0}
-                  %
-                </div>
-                <Progress
-                  value={totalRecords > 0 ? (completedRecords / totalRecords) * 100 : 0}
-                  className="mt-2 h-2"
-                />
+                <div className="text-2xl font-bold">88%</div>
+                <Progress value={88} className="mt-2 h-2" />
               </CardContent>
             </Card>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Activity className="w-4 h-4" />
-                  Recent Activity
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <PieChart className="h-4 w-4 text-purple-600" />
+                  PO Quantity by Status
                 </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{recentRecords}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Records updated in last 7 days
+                <p className="text-xs text-muted-foreground">
+                  Distribution of quantities across order statuses
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Avg. Completion
-                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{avgCompletionTime}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Records per day
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Active Stages
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {stageCounts.filter(s => s.pending + s.completed > 0).length}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Stages with records
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Workflow Health & Stage Overview */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  Workflow Health
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Overall Efficiency</span>
-                    <span className="text-sm font-medium">
-                      {totalRecords > 0 && completedRecords / totalRecords > 0.7 ? "Excellent" :
-                       totalRecords > 0 && completedRecords / totalRecords > 0.5 ? "Good" : "Needs Attention"}
-                    </span>
-                  </div>
-                  <Progress
-                    value={totalRecords > 0 ? (completedRecords / totalRecords) * 100 : 0}
-                    className="h-2"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-4">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-muted-foreground">
-                      {stageCounts.filter(s => s.pending > 0).length}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Stages with pending</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-muted-foreground">
-                      {stageCounts.filter(s => s.completed > 0).length}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Stages completed</p>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-2">Quick Actions</p>
-                    <div className="flex gap-2 justify-center">
-                      <Button variant="outline" size="sm">
-                        View Pending
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Export Data
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  Stage Status Overview
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {stageCounts.slice(0, 7).map(({ stage, pending, completed, total }) => (
-                  <div key={stage} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">Stage {stage}</span>
-                      <span className="text-muted-foreground text-xs">
-                        {total} records
-                      </span>
-                    </div>
-                    <Progress
-                      value={total > 0 ? (completed / total) * 100 : 0}
-                      className="h-2"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Pending: {pending}</span>
-                      <span>Done: {completed}</span>
-                    </div>
-                  </div>
-                ))}
-                {stageCounts.length > 7 && (
-                  <div className="text-center text-xs text-muted-foreground pt-2">
-                    +{stageCounts.length - 7} more stages
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Records Preview */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Recent Records
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Latest workflow updates
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {records.slice(0, 5).map((record) => (
-                  <div
-                    key={record.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        record.status === "completed" ? "bg-muted-foreground" : "bg-orange-400"
-                      }`} />
-                      <div>
-                        <p className="font-mono text-sm font-medium">{record.id}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Stage {record.stage} • {record.status}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(record.createdAt || Date.now()).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                {records.length === 0 && (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No records yet</p>
-                  </div>
-                )}
-                {records.length > 5 && (
-                  <div className="text-center pt-2">
-                    <Button variant="outline" size="sm">
-                      View All Records
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Progress Tab */}
-        <TabsContent value="progress" className="space-y-6 mt-6">
-          {/* Stage Progress Visualization */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  Stage-wise Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {stageCounts.map(({ stage, pending, completed, total }) => (
-                  <div key={stage} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">Stage {stage}</span>
-                      <span className="text-muted-foreground">
-                        {total} total
-                      </span>
-                    </div>
-                    <Progress
-                      value={total > 0 ? (completed / total) * 100 : 0}
-                      className="h-2"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Pending: {pending}</span>
-                      <span>Completed: {completed}</span>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <PieChart className="w-5 h-5" />
-                  Stage Distribution
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {stageDistribution.slice(0, 8).map(({ stage, count, percentage }) => (
-                  <div key={stage} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-muted-foreground rounded-full"></div>
-                      <span className="text-sm font-medium">Stage {stage}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-medium">{count}</span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        ({percentage}%)
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                {stageDistribution.length > 8 && (
-                  <div className="text-center text-sm text-muted-foreground pt-2 border-t">
-                    +{stageDistribution.length - 8} more stages
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Detailed Stage Table */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">Detailed Stage Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 font-medium">Stage</th>
-                      <th className="text-center py-2 font-medium">Pending</th>
-                      <th className="text-center py-2 font-medium">Completed</th>
-                      <th className="text-center py-2 font-medium">Total</th>
-                      <th className="text-center py-2 font-medium">Progress</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stageCounts.map(({ stage, pending, completed, total }) => (
-                      <tr key={stage} className="border-b hover:bg-muted/50">
-                        <td className="py-3 font-medium">Stage {stage}</td>
-                        <td className="py-3 text-center">{pending}</td>
-                        <td className="py-3 text-center">{completed}</td>
-                        <td className="py-3 text-center font-medium">{total}</td>
-                        <td className="py-3 text-center">
-                          <div className="flex items-center gap-2">
-                            <Progress
-                              value={total > 0 ? (completed / total) * 100 : 0}
-                              className="w-16 h-2"
-                            />
-                            <span className="text-xs text-muted-foreground w-8">
-                              {total > 0 ? Math.round((completed / total) * 100) : 0}%
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Workflow Efficiency
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Completion Rate</span>
-                    <span className="text-sm font-medium">
-                      {totalRecords > 0
-                        ? Math.round((completedRecords / totalRecords) * 100)
-                        : 0}%
-                    </span>
-                  </div>
-                  <Progress
-                    value={totalRecords > 0 ? (completedRecords / totalRecords) * 100 : 0}
-                    className="h-2"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Active Records</span>
-                    <span className="text-sm font-medium">{pendingRecords}</span>
-                  </div>
-                  <Progress
-                    value={totalRecords > 0 ? (pendingRecords / totalRecords) * 100 : 0}
-                    className="h-2"
-                  />
-                </div>
-
-                <div className="pt-4 border-t">
-                  <div className="flex justify-between items-center text-sm">
-                    <span>Overall Health</span>
-                    <span className="font-medium">
-                      {totalRecords > 0 && completedRecords / totalRecords > 0.7 ? "Excellent" :
-                       totalRecords > 0 && completedRecords / totalRecords > 0.5 ? "Good" : "Needs Attention"}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Stage Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center py-4">
-                  <div className="text-3xl font-bold mb-2">
-                    {stageCounts.filter(s => s.total > 0).length}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Active Stages</p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span>Most Active Stage</span>
-                    <span className="font-medium">
-                      {stageCounts.reduce((max, curr) =>
-                        curr.total > max.total ? curr : max, stageCounts[0]).stage}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Records in Stage</span>
-                    <span className="font-medium">
-                      {stageCounts.reduce((max, curr) =>
-                        curr.total > max.total ? curr : max, stageCounts[0]).total}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  Recent Trends
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center py-4">
-                  <div className="text-3xl font-bold mb-2">{recentRecords}</div>
-                  <p className="text-sm text-muted-foreground">Recent Updates</p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span>This Week</span>
-                    <span className="font-medium">{recentRecords}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>All Time</span>
-                    <span className="font-medium">{totalRecords}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Growth Rate</span>
-                    <span className="font-medium">
-                      {totalRecords > 0 ? Math.round((recentRecords / totalRecords) * 100) : 0}%
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Records Tab */}
-        <TabsContent value="records" className="space-y-6 mt-6">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Layers className="w-5 h-5" />
-                All Records
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Complete list of all workflow records
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="max-h-[32rem] overflow-y-auto rounded-md border border-border divide-y divide-border">
-                {records.length === 0 ? (
-                  <div className="p-6 text-center text-muted-foreground">
-                    <Layers className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">No records yet</p>
-                    <p className="text-sm">Start by creating your first indent</p>
-                  </div>
-                ) : (
-                  records.map((record) => (
-                    <div
-                      key={record.id}
-                      className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between hover:bg-muted/50 transition-colors"
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={70}
+                      paddingAngle={5}
+                      dataKey="value"
                     >
-                      <div className="space-y-1">
-                        <p className="font-mono text-sm font-bold">
-                          {record.id}
-                        </p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>Stage {record.stage}</span>
-                          <span>•</span>
-                          <span className={`font-medium ${
-                            record.status === "completed"
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }`}>
-                            {record.status === "completed" ? "Completed" : "Pending"}
-                          </span>
-                        </div>
-                        {record.data?.itemName && (
-                          <p className="text-sm text-muted-foreground">
-                            {record.data.itemName}
-                          </p>
-                        )}
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex justify-center gap-6 mt-2 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span>Complete: 88%</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                    <span>Pending: 12%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">
+                  Top Vendors
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Leading suppliers by order count
+                </p>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={vendorBarData} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" hide />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      width={80}
+                      tick={{ fontSize: 10 }}
+                    />
+                    <Tooltip />
+                    <Bar dataKey="qty" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">
+                    Top Materials
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Most ordered materials by quantity
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-2 text-xs">
+                  {topMaterials.slice(0, 5).map((m) => (
+                    <div
+                      key={m.rank}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="secondary"
+                          className="w-6 h-6 p-0 flex items-center justify-center text-[10px] font-bold"
+                        >
+                          {m.rank}
+                        </Badge>
+                        <span className="truncate max-w-32">{m.material}</span>
                       </div>
-                      <div className="mt-2 sm:mt-0 text-right">
-                        <p className="text-xs text-muted-foreground">
-                          Created {new Date(record.createdAt || Date.now()).toLocaleDateString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Updated {new Date().toLocaleTimeString()}
-                        </p>
-                      </div>
+                      <span className="font-medium">{m.qty.toFixed(2)}</span>
                     </div>
-                  ))
-                )}
-              </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">
+                    Top Vendors by Quantity
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Leading suppliers by total quantity
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-2 text-xs">
+                  {topVendors.slice(0, 5).map((v) => (
+                    <div
+                      key={v.rank}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="secondary"
+                          className="w-6 h-6 p-0 flex items-center justify-center text-[10px] font-bold"
+                        >
+                          {v.rank}
+                        </Badge>
+                        <span className="truncate max-w-32">
+                          {v.vendor.split(" ").slice(0, 2).join(" ")}
+                        </span>
+                      </div>
+                      <span className="font-medium">{v.qty.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* IN-TRANSIT TAB */}
+        <TabsContent value="intransit" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-blue-600" />
+              <h3 className="text-lg font-semibold">Materials In-Transit</h3>
+            </div>
+            <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+              {finalInTransitData.length} Items
+            </Badge>
+          </div>
+
+          {/* Search */}
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search by ERP, material, or party..."
+              value={inTransitSearch}
+              onChange={(e) => setInTransitSearch(e.target.value)}
+              className="max-w-sm"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToCSV(finalInTransitData, 'in-transit-data.csv')}
+              className="flex items-center gap-1"
+            >
+              <Download className="h-3 w-3" />
+              Export CSV
+            </Button>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setInTransitSort({
+                        key: "erp",
+                        direction: inTransitSort.key === "erp" && inTransitSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      ERP PO Number {inTransitSort.key === "erp" && (inTransitSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setInTransitSort({
+                        key: "material",
+                        direction: inTransitSort.key === "material" && inTransitSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      Material Name {inTransitSort.key === "material" && (inTransitSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setInTransitSort({
+                        key: "party",
+                        direction: inTransitSort.key === "party" && inTransitSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      Party Name {inTransitSort.key === "party" && (inTransitSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead className="text-xs">Truck No.</TableHead>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setInTransitSort({
+                        key: "date",
+                        direction: inTransitSort.key === "date" && inTransitSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      Date {inTransitSort.key === "date" && (inTransitSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead className="text-xs text-right">Quantity</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {finalInTransitData.map((item) => (
+                    <TableRow key={item.erp}>
+                      <TableCell className="font-medium text-xs">
+                        {item.erp}
+                      </TableCell>
+                      <TableCell className="text-xs">{item.material}</TableCell>
+                      <TableCell className="text-xs max-w-48 truncate">
+                        {item.party}
+                      </TableCell>
+                      <TableCell className="text-xs">{item.truck}</TableCell>
+                      <TableCell className="text-xs">{item.date}</TableCell>
+                      <TableCell className="text-right font-medium text-xs">
+                        {item.qty}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* RECEIVED TAB */}
+        <TabsContent value="received" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <h3 className="text-lg font-semibold">Received Materials</h3>
+            </div>
+            <Badge variant="secondary" className="bg-green-50 text-green-700">
+              {finalReceivedData.length} Items
+            </Badge>
+          </div>
+
+          {/* Search */}
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search by ERP, material, or party..."
+              value={receivedSearch}
+              onChange={(e) => setReceivedSearch(e.target.value)}
+              className="max-w-sm"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToCSV(finalReceivedData, 'received-data.csv')}
+              className="flex items-center gap-1"
+            >
+              <Download className="h-3 w-3" />
+              Export CSV
+            </Button>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setReceivedSort({
+                        key: "erp",
+                        direction: receivedSort.key === "erp" && receivedSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      ERP PO Number {receivedSort.key === "erp" && (receivedSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setReceivedSort({
+                        key: "material",
+                        direction: receivedSort.key === "material" && receivedSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      Material Name {receivedSort.key === "material" && (receivedSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setReceivedSort({
+                        key: "party",
+                        direction: receivedSort.key === "party" && receivedSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      Party Name {receivedSort.key === "party" && (receivedSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead className="text-xs">Bill Image</TableHead>
+                    <TableHead className="text-xs">Truck No.</TableHead>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setReceivedSort({
+                        key: "date",
+                        direction: receivedSort.key === "date" && receivedSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      Date {receivedSort.key === "date" && (receivedSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead className="text-xs text-right">Quantity</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {finalReceivedData.map((item) => (
+                    <TableRow key={item.erp}>
+                      <TableCell className="font-medium text-xs">
+                        {item.erp}
+                      </TableCell>
+                      <TableCell className="text-xs">{item.material}</TableCell>
+                      <TableCell className="text-xs max-w-48 truncate">
+                        {item.party}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-xs">{item.truck}</TableCell>
+                      <TableCell className="text-xs">{item.date}</TableCell>
+                      <TableCell className="text-right font-medium text-xs">
+                        {item.qty}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* PURCHASE DATA → PENDING TAB */}
+        <TabsContent value="purchase" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-500" />
+              <h3 className="text-lg font-semibold">
+                Pending Orders from PO Sheet
+              </h3>
+            </div>
+            <Badge variant="secondary" className="bg-orange-50 text-orange-700">
+              {finalPendingData.length} Orders
+            </Badge>
+          </div>
+
+          {/* Search */}
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search by ERP, material, or party..."
+              value={pendingSearch}
+              onChange={(e) => setPendingSearch(e.target.value)}
+              className="max-w-sm"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToCSV(finalPendingData, 'pending-data.csv')}
+              className="flex items-center gap-1"
+            >
+              <Download className="h-3 w-3" />
+              Export CSV
+            </Button>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setPendingSort({
+                        key: "erp",
+                        direction: pendingSort.key === "erp" && pendingSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      ERP PO Number {pendingSort.key === "erp" && (pendingSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setPendingSort({
+                        key: "material",
+                        direction: pendingSort.key === "material" && pendingSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      Material Name {pendingSort.key === "material" && (pendingSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead
+                      className="text-xs cursor-pointer hover:bg-gray-50"
+                      onClick={() => setPendingSort({
+                        key: "party",
+                        direction: pendingSort.key === "party" && pendingSort.direction === "asc" ? "desc" : "asc"
+                      })}
+                    >
+                      Party Name {pendingSort.key === "party" && (pendingSort.direction === "asc" ? "↑" : "↓")}
+                    </TableHead>
+                    <TableHead className="text-xs text-right">Quantity</TableHead>
+                    <TableHead className="text-xs text-right">Rate</TableHead>
+                    <TableHead className="text-xs text-right">Pending Qty</TableHead>
+                    <TableHead className="text-xs text-right">Total Lifted</TableHead>
+                    <TableHead className="text-xs text-right">Total Received</TableHead>
+                    <TableHead className="text-xs text-right">Returned Qty</TableHead>
+                    <TableHead className="text-xs text-right">Order Cancel Qty</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {finalPendingData.map((item) => (
+                    <TableRow key={item.erp}>
+                      <TableCell className="font-medium text-xs">
+                        {item.erp}
+                      </TableCell>
+                      <TableCell className="text-xs">{item.material}</TableCell>
+                      <TableCell className="text-xs max-w-40 truncate">
+                        {item.party}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {item.qty}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {item.rate.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {item.pending}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {item.lifted}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {item.received}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {item.returned}
+                      </TableCell>
+                      <TableCell className="text-right text-xs">
+                        {item.cancelled}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
