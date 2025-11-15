@@ -1,22 +1,19 @@
 "use client";
 
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useWorkflow } from "@/lib/workflow-context";
-import { StageTable } from "./stage-table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -26,376 +23,576 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Upload, X } from "lucide-react";
+import { FileText, Upload, X, Shield, ShieldCheck, CheckCircle2 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export default function Stage5() {
   const { records, moveToNextStage, updateRecord } = useWorkflow();
   const [open, setOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
+  const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<"pending" | "history">("pending");
-  const [formData, setFormData] = useState({
-    poNumber: "",
-    basicValue: "",
-    totalWithTax: "",
-    paymentTerms: "",
-    remarks: "",
-    poCopy: null as File | null,
-  });
+  const [bulkFormData, setBulkFormData] = useState<Record<string, any>>({});
 
-  const pending = records.filter(
-    (r) => r.stage === 5 && r.status === "pending"
-  );
-  const completed = records.filter((r) =>
-    r.history.some((h) => h.stage === 5)
-  );
+  const pending = records.filter((r) => r.stage === 5 && r.status === "pending");
+  const completed = records.filter((r) => r.history.some((h) => h.stage === 5));
 
-  const columns = [
-    { key: "indentNumber", label: "Indent #" },
-    { key: "createdBy", label: "Created By" },
-    { key: "category", label: "Category" },
-    { key: "itemName", label: "Item" },
-    { key: "quantity", label: "Qty" },
-    { key: "warehouse", label: "Warehouse" },
-    { key: "deliveryDate", label: "Exp. Delivery" },
-    { key: "poNumber", label: "PO Number" },
-    { key: "basicValue", label: "Basic Value" },
-    { key: "totalWithTax", label: "Total with Tax" },
-    { key: "paymentTerms", label: "Payment Terms" },
+  const baseColumns = [
+    { key: "indentNumber", label: "Indent #", icon: null },
+    { key: "itemName", label: "Item", icon: null },
+    { key: "quantity", label: "Qty", icon: null },
   ];
 
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(columns.map(col => col.key));
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(
+    baseColumns.map((c) => c.key)
+  );
 
-  const handleOpenForm = (recordId: string) => {
-    setSelectedRecord(recordId);
-    setFormData({
-      poNumber: `PO-${Date.now().toString().slice(-6)}`,
-      basicValue: "",
-      totalWithTax: "",
-      paymentTerms: "",
-      remarks: "",
-      poCopy: null,
-    });
-    setOpen(true);
-  };
+  const paymentTermsList = [
+    { value: "15", label: "15 days" },
+    { value: "30", label: "30 days" },
+    { value: "60", label: "60 days" },
+    { value: "90", label: "90 days" },
+    { value: "advance", label: "Advance" },
+    { value: "PI", label: "PI (Proforma Invoice)" },
+  ];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedRecord) {
-      updateRecord(selectedRecord, formData);
-      moveToNextStage(selectedRecord);
-      setOpen(false);
-      setSelectedRecord(null);
-      setFormData({
+  const handleOpenBulkForm = () => {
+    if (selectedRecordIds.length === 0) return;
+
+    const initialData: Record<string, any> = {};
+    selectedRecordIds.forEach((id) => {
+      initialData[id] = {
         poNumber: "",
         basicValue: "",
         totalWithTax: "",
         paymentTerms: "",
         remarks: "",
-        poCopy: null,
-      });
+        poCopy: null as File | null,
+      };
+    });
+    setBulkFormData(initialData);
+    setOpen(true);
+  };
+
+  const handleBulkSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    let allValid = true;
+
+    selectedRecordIds.forEach((id) => {
+      const data = bulkFormData[id];
+      if (!data.poNumber || !data.basicValue || !data.totalWithTax || !data.paymentTerms) {
+        allValid = false;
+      }
+    });
+
+    if (!allValid) return;
+
+    selectedRecordIds.forEach((id) => {
+      updateRecord(id, bulkFormData[id]);
+      moveToNextStage(id);
+    });
+
+    setOpen(false);
+    setSelectedRecordIds([]);
+    setBulkFormData({});
+  };
+
+  const handleFileChange = (recordId: string, file: File | null) => {
+    setBulkFormData((prev) => ({
+      ...prev,
+      [recordId]: { ...prev[recordId], poCopy: file },
+    }));
+  };
+
+  const handleFileRemove = (recordId: string) => {
+    setBulkFormData((prev) => ({
+      ...prev,
+      [recordId]: { ...prev[recordId], poCopy: null },
+    }));
+  };
+
+  const getVendorData = (record: any) => {
+    const selectedId = record.data.selectedVendor || "vendor1";
+    const idx = parseInt(selectedId.replace("vendor", ""), 10) || 1;
+    return {
+      name: record.data[`vendor${idx}Name`] || "-",
+      rate: record.data[`vendor${idx}Rate`],
+      terms: record.data[`vendor${idx}Terms`],
+      delivery: record.data[`vendor${idx}DeliveryDate`],
+      warrantyType: record.data[`vendor${idx}WarrantyType`],
+      attachment: record.data[`vendor${idx}Attachment`],
+      approvedBy: record.data.approvedBy || "Auto-Approved",
+    };
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedRecordIds.length === pending.length) {
+      setSelectedRecordIds([]);
+    } else {
+      setSelectedRecordIds(pending.map((r) => r.id));
     }
   };
 
-  const handleFileRemove = () => {
-    setFormData({ ...formData, poCopy: null });
+  const toggleSelectOne = (id: string) => {
+    setSelectedRecordIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
+
+  const ColumnSelector = () => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="w-64 justify-start">
+          {selectedColumns.length === baseColumns.length
+            ? "All columns"
+            : `${selectedColumns.length} column${selectedColumns.length > 1 ? "s" : ""} selected`}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-2">
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2 pb-2 border-b">
+            <Checkbox
+              checked={selectedColumns.length === baseColumns.length}
+              onCheckedChange={(c) => {
+                if (c) setSelectedColumns(baseColumns.map((col) => col.key));
+                else setSelectedColumns([]);
+              }}
+            />
+            <Label className="text-sm font-medium">All Columns</Label>
+          </div>
+          {baseColumns.map((col) => (
+            <div key={col.key} className="flex items-center space-x-2 py-1">
+              <Checkbox
+                checked={selectedColumns.includes(col.key)}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    setSelectedColumns((prev) => [...prev, col.key]);
+                  } else {
+                    setSelectedColumns((prev) => prev.filter((c) => c !== col.key));
+                  }
+                }}
+              />
+              <Label className="text-sm">{col.label}</Label>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 
   return (
     <div className="p-6">
-      {/* Header Card with Title and Column Filter */}
+      {/* Header */}
       <div className="mb-6 p-6 bg-white border rounded-lg shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold">Stage 5: PO Creation</h2>
             <p className="text-gray-600 mt-1">Generate and attach purchase orders</p>
           </div>
-
           <div className="flex items-center gap-4">
             <Label className="text-sm font-medium">Show Columns:</Label>
-            <Select
-              value=""
-              onValueChange={() => {}}
-            >
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder={`${selectedColumns.length} columns selected`} />
-              </SelectTrigger>
-              <SelectContent className="w-64">
-                <div className="p-2">
-                  <div className="flex items-center space-x-2 mb-2 pb-2 border-b">
-                    <Checkbox
-                      checked={selectedColumns.length === columns.length}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedColumns(columns.map(col => col.key));
-                        } else {
-                          setSelectedColumns([]);
-                        }
-                      }}
-                    />
-                    <Label className="text-sm font-medium">All Columns</Label>
-                  </div>
-                  {columns.map((col) => (
-                    <div key={col.key} className="flex items-center space-x-2 py-1">
-                      <Checkbox
-                        checked={selectedColumns.includes(col.key)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedColumns([...selectedColumns, col.key]);
-                          } else {
-                            setSelectedColumns(selectedColumns.filter(c => c !== col.key));
-                          }
-                        }}
-                      />
-                      <Label className="text-sm">{col.label}</Label>
-                    </div>
-                  ))}
-                </div>
-              </SelectContent>
-            </Select>
+            <ColumnSelector />
           </div>
         </div>
       </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => setActiveTab(v as any)}
-        className="w-full"
-      >
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="pending">
-            Pending ({pending.length})
-          </TabsTrigger>
-          <TabsTrigger value="history">
-            History ({completed.length})
-          </TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
+          <TabsTrigger value="history">History ({completed.length})</TabsTrigger>
         </TabsList>
 
-        {/* Pending Tab */}
+        {/* PENDING */}
         <TabsContent value="pending" className="mt-6">
           {pending.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-lg text-gray-500">No pending PO entries</p>
-              <p className="text-sm text-gray-400 mt-1">All purchase orders are created!</p>
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg">No pending PO entries</p>
+              <p className="text-sm mt-1">All purchase orders are created!</p>
             </div>
           ) : (
-            <div className="border rounded-lg">
+            <>
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  {selectedRecordIds.length} item{selectedRecordIds.length !== 1 ? "s" : ""} selected
+                </p>
+                <Button
+                  onClick={handleOpenBulkForm}
+                  disabled={selectedRecordIds.length === 0}
+                  size="sm"
+                >
+                  Create PO for Selected
+                </Button>
+              </div>
+
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedRecordIds.length === pending.length && pending.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
+                      {baseColumns
+                        .filter((c) => selectedColumns.includes(c.key))
+                        .map((col) => (
+                          <TableHead key={col.key}>{col.label}</TableHead>
+                        ))}
+                      <TableHead>Vendor</TableHead>
+                      <TableHead>Rate/Qty</TableHead>
+                      <TableHead>Payment Terms</TableHead>
+                      <TableHead>Exp. Delivery</TableHead>
+                      <TableHead>Warranty</TableHead>
+                      <TableHead>Attachment</TableHead>
+                      <TableHead>Approved By</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pending.map((record) => {
+                      const v = getVendorData(record);
+                      const isSelected = selectedRecordIds.includes(record.id);
+                      return (
+                        <TableRow
+                          key={record.id}
+                          className={isSelected ? "bg-blue-50" : ""}
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleSelectOne(record.id)}
+                            />
+                          </TableCell>
+                          {baseColumns
+                            .filter((c) => selectedColumns.includes(c.key))
+                            .map((col) => (
+                              <TableCell key={col.key}>{record.data[col.key] || "-"}</TableCell>
+                            ))}
+                          <TableCell className="font-medium">{v.name}</TableCell>
+                          <TableCell>₹{v.rate || "-"}</TableCell>
+                          <TableCell>
+                            {paymentTermsList.find((t) => t.value === v.terms)?.label || v.terms || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {v.delivery ? new Date(v.delivery).toLocaleDateString("en-IN") : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {v.warrantyType ? (
+                              <div className="flex items-center gap-1 text-xs">
+                                {v.warrantyType === "warranty" ? (
+                                  <Shield className="w-3.5 h-3.5 text-blue-600" />
+                                ) : (
+                                  <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                                )}
+                                <span className="capitalize">{v.warrantyType}</span>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {v.attachment ? (
+                              <div className="flex items-center gap-1 text-blue-600 text-xs">
+                                <FileText className="w-3.5 h-3.5" />
+                                <span className="truncate max-w-20">{v.attachment.name}</span>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
+                          <TableCell>{v.approvedBy}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </TabsContent>
+
+        {/* HISTORY */}
+        <TabsContent value="history" className="mt-6">
+          {completed.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg">No completed POs</p>
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Record ID</TableHead>
-                    {columns.filter(col => selectedColumns.includes(col.key)).map((col) => (
-                      <TableHead key={col.key}>
-                        {col.label}
-                      </TableHead>
-                    ))}
-                    <TableHead>Actions</TableHead>
+                    {baseColumns
+                      .filter((c) => selectedColumns.includes(c.key))
+                      .map((col) => (
+                        <TableHead key={col.key}>{col.label}</TableHead>
+                      ))}
+                    <TableHead>Vendor</TableHead>
+                    <TableHead>Rate/Qty</TableHead>
+                    <TableHead>Payment Terms</TableHead>
+                    <TableHead>Exp. Delivery</TableHead>
+                    <TableHead>Warranty</TableHead>
+                    <TableHead>Attachment</TableHead>
+                    <TableHead>Approved By</TableHead>
+                    <TableHead>PO Number</TableHead>
+                    <TableHead>Basic Value</TableHead>
+                    <TableHead>Total w/Tax</TableHead>
+                    <TableHead>PO Copy</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pending.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="font-mono text-xs">
-                        {record.id}
-                      </TableCell>
-                      {columns.filter(col => selectedColumns.includes(col.key)).map((col) => (
-                        <TableCell key={col.key}>
-                          {col.key === "deliveryDate"
-                            ? new Date(record.data[col.key]).toLocaleDateString("en-IN")
-                            : String(record.data[col.key] || "-")}
+                  {completed.map((record) => {
+                    const v = getVendorData(record);
+                    return (
+                      <TableRow key={record.id} className="bg-green-50">
+                        {baseColumns
+                          .filter((c) => selectedColumns.includes(c.key))
+                          .map((col) => (
+                            <TableCell key={col.key}>{record.data[col.key] || "-"}</TableCell>
+                          ))}
+                        <TableCell className="font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          {v.name}
                         </TableCell>
-                      ))}
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenForm(record.id)}
-                        >
-                          Create PO
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <TableCell>₹{v.rate || "-"}</TableCell>
+                        <TableCell>
+                          {paymentTermsList.find((t) => t.value === v.terms)?.label || v.terms || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {v.delivery ? new Date(v.delivery).toLocaleDateString("en-IN") : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {v.warrantyType ? (
+                            <div className="flex items-center gap-1 text-xs">
+                              {v.warrantyType === "warranty" ? (
+                                <Shield className="w-3.5 h-3.5 text-blue-600" />
+                              ) : (
+                                <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                              )}
+                              <span className="capitalize">{v.warrantyType}</span>
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {v.attachment ? (
+                            <div className="flex items-center gap-1 text-blue-600 text-xs">
+                              <FileText className="w-3.5 h-3.5" />
+                              <span className="truncate max-w-20">{v.attachment.name}</span>
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell>{v.approvedBy}</TableCell>
+                        <TableCell className="font-mono">{record.data.poNumber || "-"}</TableCell>
+                        <TableCell>₹{record.data.basicValue || "-"}</TableCell>
+                        <TableCell>₹{record.data.totalWithTax || "-"}</TableCell>
+                        <TableCell>
+                          {record.data.poCopy ? (
+                            <div className="flex items-center gap-1 text-green-600 text-xs">
+                              <FileText className="w-3.5 h-3.5" />
+                              <span className="truncate max-w-20">{record.data.poCopy.name}</span>
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
           )}
         </TabsContent>
-
-        {/* History Tab */}
-        <TabsContent value="history" className="mt-6">
-          <StageTable
-            title=""
-            stage={5}
-            pending={[]}
-            history={completed}
-            onOpenForm={() => {}}
-            onSelectRecord={() => {}}
-            columns={columns.filter(col => selectedColumns.includes(col.key))}
-            showPending={false}
-          />
-        </TabsContent>
       </Tabs>
 
-      {/* PO Creation Dialog */}
+      {/* BULK PO MODAL */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Create Purchase Order</DialogTitle>
-            <p className="text-sm text-gray-600">
-              Enter PO details and attach the official document.
-            </p>
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle>Bulk PO Creation ({selectedRecordIds.length} items)</DialogTitle>
+            <p className="text-sm text-gray-600">Fill PO details for all selected items</p>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {/* PO Number */}
-                <div className="space-y-2">
-                  <Label htmlFor="poNumber">PO Number</Label>
-                  <Input
-                    id="poNumber"
-                    value={formData.poNumber}
-                    readOnly
-                    className="bg-gray-50"
-                  />
-                </div>
+          <form onSubmit={handleBulkSubmit} className="flex-1 overflow-y-auto space-y-8 pr-2">
+            {selectedRecordIds.map((recordId) => {
+              const record = records.find((r) => r.id === recordId);
+              if (!record) return null;
+              const v = getVendorData(record);
+              const data = bulkFormData[recordId] || {};
 
-                {/* Basic Value */}
-                <div className="space-y-2">
-                  <Label htmlFor="basicValue">
-                    Basic Value <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="basicValue"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.basicValue}
-                    onChange={(e) =>
-                      setFormData({ ...formData, basicValue: e.target.value })
-                    }
-                    required
-                    placeholder="0.00"
-                  />
-                </div>
-
-                {/* Total With Tax */}
-                <div className="space-y-2">
-                  <Label htmlFor="totalWithTax">
-                    Total With Tax <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="totalWithTax"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.totalWithTax}
-                    onChange={(e) =>
-                      setFormData({ ...formData, totalWithTax: e.target.value })
-                    }
-                    required
-                    placeholder="0.00"
-                  />
-                </div>
-
-                {/* Payment Terms */}
-                <div className="space-y-2">
-                  <Label htmlFor="paymentTerms">
-                    Payment Terms <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="paymentTerms"
-                    value={formData.paymentTerms}
-                    onChange={(e) =>
-                      setFormData({ ...formData, paymentTerms: e.target.value })
-                    }
-                    required
-                    placeholder="e.g. 50% Advance, 50% on Delivery"
-                  />
-                </div>
-              </div>
-
-              {/* PO Copy Attachment */}
-              <div className="space-y-2">
-                <Label htmlFor="poCopy">PO Copy (Attachment)</Label>
-                <div>
-                  <input
-                    id="poCopy"
-                    type="file"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        poCopy: e.target.files?.[0] || null,
-                      })
-                    }
-                    className="hidden"
-                  />
-                  <label
-                    htmlFor="poCopy"
-                    className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400"
-                  >
-                    <Upload className="w-6 h-6 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-600">Upload PO copy</span>
-                  </label>
-                  {formData.poCopy && (
-                    <div className="mt-2 p-2 bg-gray-50 border rounded flex items-center justify-between">
-                      <div className="flex items-center">
-                        <FileText className="w-4 h-4 text-gray-500 mr-2" />
-                        <span className="text-sm text-gray-700">
-                          {formData.poCopy.name}
-                        </span>
-                        <span className="text-xs text-gray-600 ml-2">
-                          ({(formData.poCopy.size / 1024).toFixed(1)} KB)
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleFileRemove}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+              return (
+                <div key={recordId} className="border rounded-lg p-4 bg-gray-50">
+                  <div className="mb-4 pb-3 border-b">
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      <div><strong>Indent #:</strong> {record.data.indentNumber}</div>
+                      <div><strong>Item:</strong> {record.data.itemName}</div>
+                      <div><strong>Qty:</strong> {record.data.quantity}</div>
                     </div>
-                  )}
+                    <div className="mt-1 text-xs text-gray-600">
+                      Vendor: <span className="font-medium">{v.name}</span> | Rate: ₹{v.rate}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor={`${recordId}-poNumber`}>
+                        PO Number <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id={`${recordId}-poNumber`}
+                        value={data.poNumber || ""}
+                        onChange={(e) =>
+                          setBulkFormData((prev) => ({
+                            ...prev,
+                            [recordId]: { ...prev[recordId], poNumber: e.target.value },
+                          }))
+                        }
+                        required
+                        placeholder="PO-2025-001"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`${recordId}-basicValue`}>
+                        Basic Value <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id={`${recordId}-basicValue`}
+                        type="number"
+                        step="0.01"
+                        value={data.basicValue || ""}
+                        onChange={(e) =>
+                          setBulkFormData((prev) => ({
+                            ...prev,
+                            [recordId]: { ...prev[recordId], basicValue: e.target.value },
+                          }))
+                        }
+                        required
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`${recordId}-totalWithTax`}>
+                        Total With Tax <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id={`${recordId}-totalWithTax`}
+                        type="number"
+                        step="0.01"
+                        value={data.totalWithTax || ""}
+                        onChange={(e) =>
+                          setBulkFormData((prev) => ({
+                            ...prev,
+                            [recordId]: { ...prev[recordId], totalWithTax: e.target.value },
+                          }))
+                        }
+                        required
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`${recordId}-paymentTerms`}>
+                        Payment Terms <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id={`${recordId}-paymentTerms`}
+                        value={data.paymentTerms || ""}
+                        onChange={(e) =>
+                          setBulkFormData((prev) => ({
+                            ...prev,
+                            [recordId]: { ...prev[recordId], paymentTerms: e.target.value },
+                          }))
+                        }
+                        required
+                        placeholder="50% Advance"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    <Label>PO Copy</Label>
+                    <div>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(recordId, e.target.files?.[0] || null)}
+                        className="hidden"
+                        id={`file-${recordId}`}
+                      />
+                      <label
+                        htmlFor={`file-${recordId}`}
+                        className="flex items-center justify-center w-full p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 text-sm"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload PO copy
+                      </label>
+                      {data.poCopy && (
+                        <div className="mt-2 p-2 bg-white border rounded flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4" />
+                            <span>{data.poCopy.name}</span>
+                            <span className="text-gray-500">
+                              ({(data.poCopy.size / 1024).toFixed(1)} KB)
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleFileRemove(recordId)}
+                            className="text-red-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <Label htmlFor={`${recordId}-remarks`}>Remarks</Label>
+                    <Textarea
+                      id={`${recordId}-remarks`}
+                      value={data.remarks || ""}
+                      onChange={(e) =>
+                        setBulkFormData((prev) => ({
+                          ...prev,
+                          [recordId]: { ...prev[recordId], remarks: e.target.value },
+                        }))
+                      }
+                      placeholder="Any notes..."
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
-              </div>
+              );
+            })}
+          </form>
 
-              {/* Remarks */}
-              <div className="space-y-2">
-                <Label htmlFor="remarks">Remarks</Label>
-                <Textarea
-                  id="remarks"
-                  value={formData.remarks}
-                  onChange={(e) =>
-                    setFormData({ ...formData, remarks: e.target.value })
-                  }
-                  placeholder="Any special instructions..."
-                  rows={3}
-                />
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={
-                    !formData.basicValue ||
-                    !formData.totalWithTax ||
-                    !formData.paymentTerms
-                  }
-                >
-                  Create PO
-                </Button>
-              </DialogFooter>
-            </form>
-          </div>
+          <DialogFooter className="flex-shrink-0 border-t pt-4">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBulkSubmit}
+              disabled={
+                selectedRecordIds.length === 0 ||
+                !selectedRecordIds.every((id) => {
+                  const d = bulkFormData[id];
+                  return d?.poNumber && d?.basicValue && d?.totalWithTax && d?.paymentTerms;
+                })
+              }
+            >
+              Create {selectedRecordIds.length} PO{selectedRecordIds.length > 1 ? "s" : ""}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

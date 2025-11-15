@@ -1,10 +1,16 @@
 "use client";
 
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useWorkflow } from "@/lib/workflow-context";
-import { StageTable } from "./stage-table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,189 +22,322 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const ACCOUNTANTS = [
+  "Priya Sharma",
+  "Rajesh Kumar",
+  "Anita Patel",
+  "Vikram Singh",
+  "Sneha Gupta",
+];
 
 export default function Stage9() {
-  const { records, moveToNextStage, updateRecord } = useWorkflow();
-  const [open, setOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"pending" | "history">("pending");
-  const [formData, setFormData] = useState({
+  const { records = [], updateRecord, moveToNextStage } = useWorkflow() || {};
+
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [bulkData, setBulkData] = useState({
     doneBy: "",
-    submissionDate: "",
+    submissionDate: new Date().toISOString().split("T")[0],
     remarks: "",
   });
+  const [activeTab, setActiveTab] = useState<"pending" | "history">("pending");
 
-  const pending = records.filter(
-    (r) => r.stage === 9 && r.status === "pending"
+  // Filter records
+  const pending = (records || []).filter(
+    (r: any) => r?.stage === 9 && r?.status === "pending"
   );
-  const completed = records.filter((r) =>
-    r.history.some((h) => h.stage === 9)
+  const completed = (records || []).filter((r: any) =>
+    Array.isArray(r?.history) ? r.history.some((h: any) => h?.stage === 9) : false
   );
 
-  const columns = [
+  // Pending columns (without Tally result fields)
+  const pendingColumns = [
     { key: "indentNumber", label: "Indent #" },
     { key: "createdBy", label: "Created By" },
     { key: "category", label: "Category" },
     { key: "itemName", label: "Item" },
     { key: "quantity", label: "Qty" },
     { key: "warehouse", label: "Warehouse" },
+    { key: "vendor", label: "Vendor" },
+    { key: "ratePerQty", label: "Rate/Qty" },
+    { key: "paymentTerms", label: "Payment Terms" },
     { key: "deliveryDate", label: "Exp. Delivery" },
+    { key: "warranty", label: "Warranty" },
+    { key: "attachment", label: "Attachment" },
+    { key: "approvedBy", label: "Approved By" },
     { key: "poNumber", label: "PO Number" },
-    { key: "liftNumber", label: "Lift Number" },
+    { key: "basicValue", label: "Basic Value" },
+    { key: "totalWithTax", label: "Total w/Tax" },
+    { key: "poCopy", label: "PO Copy" },
+    { key: "liftNumber", label: "Lift #" },
+    { key: "liftQty", label: "Lift Qty" },
+    { key: "transporter", label: "Transporter" },
+    { key: "lrNumber", label: "LR #" },
+    { key: "freight", label: "Freight" },
+    { key: "advanceAmount", label: "Adv. Amt" },
+    { key: "paymentDate", label: "Pay Date" },
+    { key: "biltyNumber", label: "Bilty #" },
+    { key: "invoiceNumber", label: "Invoice #" },
+    { key: "invoiceDate", label: "Invoice Date" },
+    { key: "srnNumber", label: "SRN #" },
+    { key: "qcRequired", label: "QC Required" },
+    { key: "receivedItemImage", label: "Rec. Item Img" },
+    { key: "hydraAmount", label: "Hydra Amt" },
+    { key: "labourAmount", label: "Labour Amt" },
+    { key: "hemaliAmount", label: "Hemali Amt" },
+    { key: "qcBy", label: "QC Done By" },
+    { key: "qcDate", label: "QC Date" },
+    { key: "qcStatus", label: "QC Status" },
+    { key: "rejectQty", label: "Reject Qty" },
+    { key: "rejectRemarks", label: "Reject Remarks" },
+    { key: "returnStatus", label: "Return Status" },
+    { key: "qcRemarks", label: "QC Remarks" },
   ];
 
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(columns.map(col => col.key));
+  // History columns (includes Tally result fields)
+  const historyColumns = [
+    ...pendingColumns,
+    { key: "doneBy", label: "Tally Done By" },
+    { key: "submissionDate", label: "Tally Date" },
+    { key: "remarks", label: "Tally Remarks" },
+  ];
 
-  const handleOpenForm = (recordId: string) => {
-    const today = new Date().toISOString().split("T")[0];
-    setSelectedRecord(recordId);
-    setFormData({
-      doneBy: "",
-      submissionDate: today,
-      remarks: "",
-    });
-    setOpen(true);
+  const [selectedPendingColumns, setSelectedPendingColumns] = useState<string[]>(
+    pendingColumns.map((c) => c.key)
+  );
+
+  const [selectedHistoryColumns, setSelectedHistoryColumns] = useState<string[]>(
+    historyColumns.map((c) => c.key)
+  );
+
+  // Toggle row
+  const toggleRow = (id: string) => {
+    const newSet = new Set(selectedRows);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedRows(newSet);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedRecord && formData.doneBy && formData.submissionDate) {
-      updateRecord(selectedRecord, formData);
-      moveToNextStage(selectedRecord);
-      setOpen(false);
-      setSelectedRecord(null);
-      setFormData({
-        doneBy: "",
-        submissionDate: "",
-        remarks: "",
-      });
+  // Toggle all
+  const toggleAll = () => {
+    if (selectedRows.size === pending.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(pending.map((r: any) => r.id)));
     }
   };
 
-  const isFormValid = formData.doneBy && formData.submissionDate;
+  // Bulk submit
+  const handleBulkSubmit = () => {
+    if (!bulkData.doneBy || selectedRows.size === 0) return;
+
+    selectedRows.forEach((id) => {
+      const tallyData = {
+        doneBy: bulkData.doneBy,
+        submissionDate: bulkData.submissionDate,
+        remarks: bulkData.remarks,
+      };
+      updateRecord(id, tallyData);
+      moveToNextStage(id);
+    });
+
+    setSelectedRows(new Set());
+    setBulkData({
+      doneBy: "",
+      submissionDate: new Date().toISOString().split("T")[0],
+      remarks: "",
+    });
+  };
+
+  // Get vendor data
+  const getVendorData = (record: any) => {
+    const selectedId = record?.data?.selectedVendor || "vendor1";
+    const idx = parseInt(selectedId.replace("vendor", ""), 10) || 1;
+    return {
+      name: record?.data?.[`vendor${idx}Name`] || record?.data?.vendorName || "-",
+      rate: record?.data?.[`vendor${idx}Rate`] || record?.data?.ratePerQty || "-",
+      terms: record?.data?.[`vendor${idx}Terms`] || record?.data?.paymentTerms || "-",
+      delivery: record?.data?.[`vendor${idx}DeliveryDate`] || record?.data?.deliveryDate,
+      warrantyType: record?.data?.[`vendor${idx}WarrantyType`] || record?.data?.warrantyType || "-",
+      attachment: record?.data?.[`vendor${idx}Attachment`] || record?.data?.vendorAttachment,
+    };
+  };
+
+  // Safe value getter with lifting data support
+  const safeValue = (record: any, key: string, isHistory = false) => {
+    try {
+      const data = isHistory
+        ? record?.history?.find((h: any) => h?.stage === 9)?.data || record?.data
+        : record?.data;
+
+      // Get lifting data
+      const lift = (data?.liftingData as any[] ?? [])[0] ?? {};
+      const vendor = getVendorData({ data });
+
+      // Handle lifting data fields
+      if (key === "liftNumber") return lift.liftNumber || "-";
+      if (key === "liftQty") return lift.liftingQty || "-";
+      if (key === "transporter") return lift.transporterName || "-";
+      if (key === "lrNumber") return lift.lrNumber || "-";
+      if (key === "freight") return lift.freightAmount ? `₹${lift.freightAmount}` : "-";
+      if (key === "advanceAmount") return lift.advanceAmount ? `₹${lift.advanceAmount}` : "-";
+      if (key === "paymentDate") return lift.paymentDate ? new Date(lift.paymentDate).toLocaleDateString("en-IN") : "-";
+      if (key === "biltyNumber") return lift.biltyCopy?.name || "-";
+
+      // Handle vendor data fields
+      if (key === "vendor") return vendor.name;
+      if (key === "ratePerQty") return vendor.rate ? `₹${vendor.rate}` : "-";
+      if (key === "paymentTerms") return vendor.terms;
+      if (key === "warranty") return vendor.warrantyType;
+      if (key === "attachment") return vendor.attachment?.name || "-";
+
+      // Handle warehouse
+      if (key === "warehouse") return data?.warehouseLocation || data?.warehouse || "-";
+
+      // Handle Stage 7 payment amounts
+      if (key === "hydraAmount") return data?.paymentAmountHydra ? `₹${data.paymentAmountHydra}` : "-";
+      if (key === "labourAmount") return data?.paymentAmountLabour ? `₹${data.paymentAmountLabour}` : "-";
+      if (key === "hemaliAmount") return data?.paymentAmountHemali ? `₹${data.paymentAmountHemali}` : "-";
+
+      // Handle QC Required
+      if (key === "qcRequired") return data?.qcRequirement || "-";
+
+      // Handle regular fields
+      const val = data?.[key];
+      if (val === undefined || val === null) return "-";
+      return key.includes("Date") && val
+        ? new Date(val).toLocaleDateString("en-IN")
+        : String(val);
+    } catch {
+      return "-";
+    }
+  };
+
+  if (!records) {
+    return <div className="p-6 text-center text-red-600">Loading...</div>;
+  }
 
   return (
     <div className="p-6">
-      {/* Header Card with Title and Column Filter */}
+      {/* Header */}
       <div className="mb-6 p-6 bg-white border rounded-lg shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold">Stage 9: Tally Entry</h2>
-            <p className="text-gray-600 mt-1">Record material receipt in Tally accounting system</p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Label className="text-sm font-medium">Show Columns:</Label>
-            <Select
-              value=""
-              onValueChange={() => {}}
-            >
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder={`${selectedColumns.length} columns selected`} />
-              </SelectTrigger>
-              <SelectContent className="w-64">
-                <div className="p-2">
-                  <div className="flex items-center space-x-2 mb-2 pb-2 border-b">
-                    <Checkbox
-                      checked={selectedColumns.length === columns.length}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedColumns(columns.map(col => col.key));
-                        } else {
-                          setSelectedColumns([]);
-                        }
-                      }}
-                    />
-                    <Label className="text-sm font-medium">All Columns</Label>
-                  </div>
-                  {columns.map((col) => (
-                    <div key={col.key} className="flex items-center space-x-2 py-1">
-                      <Checkbox
-                        checked={selectedColumns.includes(col.key)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedColumns([...selectedColumns, col.key]);
-                          } else {
-                            setSelectedColumns(selectedColumns.filter(c => c !== col.key));
-                          }
-                        }}
-                      />
-                      <Label className="text-sm">{col.label}</Label>
-                    </div>
-                  ))}
-                </div>
-              </SelectContent>
-            </Select>
+            <p className="text-gray-600 mt-1">Record material receipt in Tally</p>
           </div>
         </div>
+
+        {/* Bulk Tally Controls */}
+        {selectedRows.size > 0 && (
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Checkbox checked={true} disabled />
+                <span className="font-medium">{selectedRows.size} selected</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label className="whitespace-nowrap">Done By *</Label>
+                <Select
+                  value={bulkData.doneBy}
+                  onValueChange={(v) => setBulkData({ ...bulkData, doneBy: v })}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACCOUNTANTS.map((n) => (
+                      <SelectItem key={n} value={n}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  value={bulkData.submissionDate}
+                  onChange={(e) =>
+                    setBulkData({ ...bulkData, submissionDate: e.target.value })
+                  }
+                  className="w-40"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label>Remarks</Label>
+                <Input
+                  value={bulkData.remarks}
+                  onChange={(e) =>
+                    setBulkData({ ...bulkData, remarks: e.target.value })
+                  }
+                  placeholder="Optional..."
+                  className="w-64"
+                />
+              </div>
+
+              <Button onClick={handleBulkSubmit} disabled={!bulkData.doneBy}>
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => setActiveTab(v as any)}
-        className="w-full"
-      >
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="pending">
-            Pending ({pending.length})
-          </TabsTrigger>
-          <TabsTrigger value="history">
-            History ({completed.length})
-          </TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
+          <TabsTrigger value="history">History ({completed.length})</TabsTrigger>
         </TabsList>
 
         {/* Pending Tab */}
         <TabsContent value="pending" className="mt-6">
           {pending.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-lg text-gray-500">No pending Tally entries</p>
-              <p className="text-sm text-gray-400 mt-1">All receipts are recorded!</p>
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg">No pending Tally entries</p>
             </div>
           ) : (
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Record ID</TableHead>
-                    {columns.filter(col => selectedColumns.includes(col.key)).map((col) => (
-                      <TableHead key={col.key}>
-                        {col.label}
-                      </TableHead>
-                    ))}
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-12 sticky left-0 bg-white z-20">
+                      <Checkbox
+                        checked={
+                          selectedRows.size === pending.length && pending.length > 0
+                        }
+                        onCheckedChange={toggleAll}
+                      />
+                    </TableHead>
+                    <TableHead className="sticky left-12 bg-white z-20">ID</TableHead>
+                    {pendingColumns
+                      .filter((c) => selectedPendingColumns.includes(c.key))
+                      .map((col) => (
+                        <TableHead key={col.key}>{col.label}</TableHead>
+                      ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pending.map((record) => (
+                  {pending.map((record: any) => (
                     <TableRow key={record.id}>
-                      <TableCell className="font-mono text-xs">
+                      <TableCell className="w-12 sticky left-0 bg-white z-10">
+                        <Checkbox
+                          checked={selectedRows.has(record.id)}
+                          onCheckedChange={() => toggleRow(record.id)}
+                        />
+                      </TableCell>
+                      <TableCell className="font-mono text-xs sticky left-12 bg-white z-10">
                         {record.id}
                       </TableCell>
-                      {columns.filter(col => selectedColumns.includes(col.key)).map((col) => (
-                        <TableCell key={col.key}>
-                          {col.key === "deliveryDate"
-                            ? new Date(record.data[col.key]).toLocaleDateString("en-IN")
-                            : String(record.data[col.key] || "-")}
-                        </TableCell>
-                      ))}
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenForm(record.id)}
-                        >
-                          Enter in Tally
-                        </Button>
-                      </TableCell>
+                      {pendingColumns
+                        .filter((c) => selectedPendingColumns.includes(c.key))
+                        .map((col) => (
+                          <TableCell key={col.key}>
+                            {safeValue(record, col.key)}
+                          </TableCell>
+                        ))}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -209,105 +348,44 @@ export default function Stage9() {
 
         {/* History Tab */}
         <TabsContent value="history" className="mt-6">
-          <StageTable
-            title=""
-            stage={9}
-            pending={[]}
-            history={completed}
-            onOpenForm={() => {}}
-            onSelectRecord={() => {}}
-            columns={columns.filter(col => selectedColumns.includes(col.key))}
-            showPending={false}
-          />
+          {completed.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg">No Tally history</p>
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky left-0 bg-white z-10">ID</TableHead>
+                    {historyColumns
+                      .filter((c) => selectedHistoryColumns.includes(c.key))
+                      .map((col) => (
+                        <TableHead key={col.key}>{col.label}</TableHead>
+                      ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {completed.map((record: any) => (
+                    <TableRow key={record.id}>
+                      <TableCell className="font-mono text-xs sticky left-0 bg-white z-10">
+                        {record.id}
+                      </TableCell>
+                      {historyColumns
+                        .filter((c) => selectedHistoryColumns.includes(c.key))
+                        .map((col) => (
+                          <TableCell key={col.key}>
+                            {safeValue(record, col.key, true)}
+                          </TableCell>
+                        ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
-
-      {/* Tally Entry Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle>Tally Entry – Material Receipt</DialogTitle>
-            <p className="text-sm text-gray-600">
-              Record the received material in Tally ERP system.
-            </p>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Done By Dropdown */}
-                <div className="space-y-2">
-                  <Label htmlFor="doneBy">
-                    Done By <span className="text-red-500">*</span>
-                  </Label>
-                  <select
-                    id="doneBy"
-                    value={formData.doneBy}
-                    onChange={(e) =>
-                      setFormData({ ...formData, doneBy: e.target.value })
-                    }
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded"
-                  >
-                    <option value="">Select accountant...</option>
-                    <option value="Priya Sharma">Priya Sharma</option>
-                    <option value="Rajesh Kumar">Rajesh Kumar</option>
-                    <option value="Anita Patel">Anita Patel</option>
-                    <option value="Vikram Singh">Vikram Singh</option>
-                    <option value="Sneha Gupta">Sneha Gupta</option>
-                  </select>
-                </div>
-
-                {/* Date of Entry */}
-                <div className="space-y-2">
-                  <Label htmlFor="submissionDate">
-                    Date of Entry <span className="text-red-500">*</span>
-                  </Label>
-                  <input
-                    id="submissionDate"
-                    type="date"
-                    value={formData.submissionDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, submissionDate: e.target.value })
-                    }
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded"
-                  />
-                </div>
-              </div>
-
-              {/* Remarks */}
-              <div className="space-y-2">
-                <Label htmlFor="remarks">Remarks</Label>
-                <textarea
-                  id="remarks"
-                  value={formData.remarks}
-                  onChange={(e) =>
-                    setFormData({ ...formData, remarks: e.target.value })
-                  }
-                  placeholder="Any special notes..."
-                  className="w-full min-h-24 px-3 py-2 border border-gray-300 rounded resize-none"
-                  rows={3}
-                />
-              </div>
-            </form>
-          </div>
-
-          {/* Actions - Fixed at bottom */}
-          <DialogFooter className="flex-shrink-0 border-t pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={!isFormValid} onClick={handleSubmit}>
-              Submit to Tally
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -33,31 +33,54 @@ const WorkflowContext = createContext<WorkflowContextType | undefined>(
 export function WorkflowProvider({ children }: { children: ReactNode }) {
   const [records, setRecords] = useState<WorkflowRecord[]>([]);
   const [indentCounter, setIndentCounter] = useState(1);
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  // Load data from localStorage on mount
   useEffect(() => {
-    const savedRecords = localStorage.getItem("workflow-records");
-    if (savedRecords) {
-      const parsed = JSON.parse(savedRecords);
-      const restoredRecords = parsed.map((r: any) => ({
-        ...r,
-        createdAt: new Date(r.createdAt),
-        history: r.history.map((h: any) => ({ ...h, date: new Date(h.date) })),
-      }));
-      setRecords(restoredRecords);
-    }
-    const savedCounter = localStorage.getItem("indent-counter");
-    if (savedCounter) {
-      setIndentCounter(parseInt(savedCounter, 10));
+    try {
+      const savedRecords = localStorage.getItem("workflow-records");
+      if (savedRecords) {
+        const parsed = JSON.parse(savedRecords);
+        const restoredRecords = parsed.map((r: any) => ({
+          ...r,
+          createdAt: new Date(r.createdAt),
+          history: r.history.map((h: any) => ({ ...h, date: new Date(h.date) })),
+        }));
+        setRecords(restoredRecords);
+      }
+      
+      const savedCounter = localStorage.getItem("indent-counter");
+      if (savedCounter) {
+        setIndentCounter(parseInt(savedCounter, 10));
+      }
+    } catch (error) {
+      console.error("Error loading data from localStorage:", error);
+    } finally {
+      setIsLoaded(true);
     }
   }, []);
 
+  // Save records to localStorage whenever they change (but only after initial load)
   useEffect(() => {
-    localStorage.setItem("workflow-records", JSON.stringify(records));
-  }, [records]);
+    if (isLoaded) {
+      try {
+        localStorage.setItem("workflow-records", JSON.stringify(records));
+      } catch (error) {
+        console.error("Error saving records to localStorage:", error);
+      }
+    }
+  }, [records, isLoaded]);
 
+  // Save counter to localStorage whenever it changes (but only after initial load)
   useEffect(() => {
-    localStorage.setItem("indent-counter", indentCounter.toString());
-  }, [indentCounter]);
+    if (isLoaded) {
+      try {
+        localStorage.setItem("indent-counter", indentCounter.toString());
+      } catch (error) {
+        console.error("Error saving counter to localStorage:", error);
+      }
+    }
+  }, [indentCounter, isLoaded]);
 
   const addRecord = (stageNum: number, data: Record<string, any>) => {
     const newRecord: WorkflowRecord = {
@@ -81,7 +104,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
             stage: record.stage + 1,
             history: [
               ...record.history,
-              { stage: record.stage, data: record.data, date: new Date() },
+              { stage: record.stage, data: { ...record.data }, date: new Date() },
             ],
           };
         }

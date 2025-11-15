@@ -80,6 +80,8 @@ export function StageTable({
               <span className="text-right break-words ml-2">
                 {col.key === "deliveryDate"
                   ? new Date(record.data[col.key]).toLocaleDateString()
+                  : col.key === "leadTime"
+                  ? `${record.data[col.key] || "-"} days`
                   : String(record.data[col.key] || "-")}
               </span>
             </div>
@@ -163,6 +165,8 @@ export function StageTable({
                                   ? new Date(
                                       record.data[col.key]
                                     ).toLocaleDateString()
+                                  : col.key === "leadTime"
+                                  ? `${record.data[col.key] || "-"} days`
                                   : String(record.data[col.key] || "-")}
                               </TableCell>
                             ))}
@@ -244,6 +248,8 @@ export function StageTable({
                                 ? new Date(
                                     record.data[col.key]
                                   ).toLocaleDateString()
+                                : col.key === "leadTime"
+                                ? `${record.data[col.key] || "-"} days`
                                 : String(record.data[col.key] || "-")}
                             </TableCell>
                           ))}

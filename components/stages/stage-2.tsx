@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useWorkflow } from "@/lib/workflow-context";
 import { StageTable } from "./stage-table";
-import { StageDialogHeader } from "./stage-dialog-header";
 import {
   Dialog,
   DialogContent,
@@ -42,7 +41,17 @@ import {
   FileText,
   Hash,
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export default function Stage2() {
   const { records, moveToNextStage, updateRecord } = useWorkflow();
@@ -72,14 +81,18 @@ export default function Stage2() {
   const columns = [
     { key: "indentNumber", label: "Indent #", icon: Hash },
     { key: "createdBy", label: "Created By", icon: User },
+    { key: "warehouseLocation", label: "Warehouse Location", icon: Warehouse },
+    { key: "leadTime", label: "Lead Time", icon: Calendar },
     { key: "category", label: "Category", icon: FileText },
     { key: "itemName", label: "Item", icon: Package },
     { key: "quantity", label: "Qty", icon: Package },
-    { key: "warehouse", label: "Warehouse", icon: Warehouse },
     { key: "deliveryDate", label: "Exp. Delivery", icon: Calendar },
-  ];
+  ] as const;
 
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(columns.map(col => col.key));
+  // All columns selected by default
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(
+    columns.map((c) => c.key)
+  );
 
   const toggleRecord = (id: string) => {
     setSelectedRecords((prev) =>
@@ -95,24 +108,35 @@ export default function Stage2() {
     }
   };
 
+  // Open modal when something is selected & pre-fill first record qty
   useEffect(() => {
     setIsModalOpen(selectedRecords.length > 0);
-  }, [selectedRecords]);
+    if (selectedRecords.length > 0) {
+      const first = records.find((r) => r.id === selectedRecords[0]);
+      if (first) {
+        setApprovalForm((prev) => ({
+          ...prev,
+          approvedQty: first.data.quantity ?? "",
+          status: "approved",
+        }));
+      }
+    }
+  }, [selectedRecords, records]);
 
   const handleBulkApprove = () => {
     selectedRecords.forEach((id) => {
       const record = records.find((r) => r.id === id);
-      if (record) {
-        const approvedQty = approvalForm.approvedQty || record.data.quantity;
-        updateRecord(id, {
-          ...approvalForm,
-          approvedQty,
-          status: approvalForm.status,
-        });
+      if (!record) return;
 
-        if (approvalForm.status === "approved") {
-          moveToNextStage(id);
-        }
+      const qty = approvalForm.approvedQty || record.data.quantity;
+      updateRecord(id, {
+        ...approvalForm,
+        approvedQty: qty,
+        status: approvalForm.status,
+      });
+
+      if (approvalForm.status === "approved") {
+        moveToNextStage(id);
       }
     });
 
@@ -127,62 +151,82 @@ export default function Stage2() {
     setIsModalOpen(false);
   };
 
-  const selectedItems = pending.filter((r) => selectedRecords.includes(r.id));
+  const selectedItems = pending.filter((r) =>
+    selectedRecords.includes(r.id)
+  );
 
-  const isFormValid = approvalForm.approvedBy && approvalForm.status;
+  const isFormValid = !!approvalForm.approvedBy && !!approvalForm.status;
 
+  /* --------------------------------------------------------------------- */
+  /* -------------------------- Column Selector -------------------------- */
+  /* --------------------------------------------------------------------- */
+  const ColumnSelector = () => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="w-64 justify-start">
+          {selectedColumns.length === columns.length
+            ? "All columns"
+            : `${selectedColumns.length} column${
+                selectedColumns.length !== 1 ? "s" : ""
+              } selected`}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-2">
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2 pb-2 border-b">
+            <Checkbox
+              checked={selectedColumns.length === columns.length}
+              onCheckedChange={(c) => {
+                if (c) setSelectedColumns(columns.map((col) => col.key));
+                else setSelectedColumns([]);
+              }}
+            />
+            <Label className="text-sm font-medium">All Columns</Label>
+          </div>
+
+          {columns.map((col) => (
+            <div
+              key={col.key}
+              className="flex items-center space-x-2 py-1"
+            >
+              <Checkbox
+                checked={selectedColumns.includes(col.key)}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    setSelectedColumns((prev) => [...prev, col.key]);
+                  } else {
+                    setSelectedColumns((prev) =>
+                      prev.filter((c) => c !== col.key)
+                    );
+                  }
+                }}
+              />
+              <Label className="text-sm">{col.label}</Label>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+
+  /* --------------------------------------------------------------------- */
+  /* ------------------------------ Render ------------------------------- */
+  /* --------------------------------------------------------------------- */
   return (
     <div className="p-6">
-      {/* Header Card with Title and Column Filter */}
+      {/* Header Card */}
       <div className="mb-6 p-6 bg-white border rounded-lg shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold">Stage 2: Approval</h2>
-            <p className="text-gray-600 mt-1">Review and approve/reject indents</p>
+            <p className="text-gray-600 mt-1">
+              Review and approve/reject indents
+            </p>
           </div>
 
           <div className="flex items-center gap-4">
             <Label className="text-sm font-medium">Show Columns:</Label>
-            <Select
-              value=""
-              onValueChange={() => {}}
-            >
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder={`${selectedColumns.length} columns selected`} />
-              </SelectTrigger>
-              <SelectContent className="w-64">
-                <div className="p-2">
-                  <div className="flex items-center space-x-2 mb-2 pb-2 border-b">
-                    <Checkbox
-                      checked={selectedColumns.length === columns.length}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedColumns(columns.map(col => col.key));
-                        } else {
-                          setSelectedColumns([]);
-                        }
-                      }}
-                    />
-                    <Label className="text-sm font-medium">All Columns</Label>
-                  </div>
-                  {columns.map((col) => (
-                    <div key={col.key} className="flex items-center space-x-2 py-1">
-                      <Checkbox
-                        checked={selectedColumns.includes(col.key)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedColumns([...selectedColumns, col.key]);
-                          } else {
-                            setSelectedColumns(selectedColumns.filter(c => c !== col.key));
-                          }
-                        }}
-                      />
-                      <Label className="text-sm">{col.label}</Label>
-                    </div>
-                  ))}
-                </div>
-              </SelectContent>
-            </Select>
+            <ColumnSelector />
           </div>
         </div>
       </div>
@@ -201,42 +245,47 @@ export default function Stage2() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Pending Tab */}
+        {/* ---------- PENDING ---------- */}
         <TabsContent value="pending" className="mt-6">
           {pending.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-lg text-gray-500">No pending approvals</p>
-              <p className="text-sm text-gray-400 mt-1">All indents are processed!</p>
+              <p className="text-sm text-gray-400 mt-1">
+                All indents are processed!
+              </p>
             </div>
           ) : (
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox
                         checked={
-                          selectedRecords.length === pending.length &&
-                          pending.length > 0
+                          pending.length > 0 &&
+                          selectedRecords.length === pending.length
                         }
                         onCheckedChange={toggleAll}
                       />
                     </TableHead>
-                    {columns.filter(col => selectedColumns.includes(col.key)).map((col) => (
-                      <TableHead key={col.key}>
-                        <div className="flex items-center gap-2">
-                          {col.icon && <col.icon className="w-4 h-4" />}
-                          {col.label}
-                        </div>
-                      </TableHead>
-                    ))}
+                    {columns
+                      .filter((c) => selectedColumns.includes(c.key))
+                      .map((col) => (
+                        <TableHead key={col.key}>
+                          <div className="flex items-center gap-2">
+                            {col.icon && <col.icon className="w-4 h-4" />}
+                            {col.label}
+                          </div>
+                        </TableHead>
+                      ))}
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   {pending.map((record) => (
                     <TableRow
                       key={record.id}
-                      className="cursor-pointer"
+                      className="cursor-pointer hover:bg-muted/50"
                       onClick={() => toggleRecord(record.id)}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -245,13 +294,20 @@ export default function Stage2() {
                           onCheckedChange={() => toggleRecord(record.id)}
                         />
                       </TableCell>
-                      {columns.filter(col => selectedColumns.includes(col.key)).map((col) => (
-                        <TableCell key={col.key}>
-                          {col.key === "deliveryDate"
-                            ? new Date(record.data[col.key]).toLocaleDateString("en-IN")
-                            : String(record.data[col.key] || "-")}
-                        </TableCell>
-                      ))}
+
+                      {columns
+                        .filter((c) => selectedColumns.includes(c.key))
+                        .map((col) => (
+                          <TableCell key={col.key}>
+                            {col.key === "deliveryDate"
+                              ? new Date(
+                                  record.data[col.key]
+                                ).toLocaleDateString("en-IN")
+                              : col.key === "leadTime"
+                              ? `${record.data[col.key] ?? "-"} days`
+                              : String(record.data[col.key] ?? "-")}
+                          </TableCell>
+                        ))}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -260,7 +316,7 @@ export default function Stage2() {
           )}
         </TabsContent>
 
-        {/* History Tab */}
+        {/* ---------- HISTORY ---------- */}
         <TabsContent value="history" className="mt-6">
           <StageTable
             title=""
@@ -269,35 +325,36 @@ export default function Stage2() {
             history={history}
             onOpenForm={() => {}}
             onSelectRecord={() => {}}
-            columns={columns.filter(col => selectedColumns.includes(col.key))}
+            columns={columns.filter((c) => selectedColumns.includes(c.key))}
             showPending={false}
           />
         </TabsContent>
       </Tabs>
 
-      {/* Approval Modal */}
+      {/* ------------------- APPROVAL MODAL ------------------- */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              Bulk Approval ({selectedRecords.length} item{selectedRecords.length > 1 ? "s" : ""})
+              Bulk Approval ({selectedRecords.length} item
+              {selectedRecords.length > 1 ? "s" : ""})
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Selected Items Summary */}
+            {/* Selected items summary */}
             <div className="border rounded-lg p-4">
               <h3 className="font-medium mb-2">Selected Items</h3>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
+              <div className="space-y-1 max-h-32 overflow-y-auto text-sm">
                 {selectedItems.map((item) => (
-                  <div key={item.id} className="text-sm">
-                    {item.data.indentNumber} - {item.data.itemName} (Qty: {item.data.quantity})
+                  <div key={item.id}>
+                    {item.data.indentNumber} - {item.data.itemName} (Qty:{" "}
+                    {item.data.quantity})
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Approval Form */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -313,8 +370,8 @@ export default function Stage2() {
                   </Label>
                   <Select
                     value={approvalForm.approvedBy}
-                    onValueChange={(val) =>
-                      setApprovalForm({ ...approvalForm, approvedBy: val })
+                    onValueChange={(v) =>
+                      setApprovalForm((p) => ({ ...p, approvedBy: v }))
                     }
                     required
                   >
@@ -322,9 +379,9 @@ export default function Stage2() {
                       <SelectValue placeholder="Select approver" />
                     </SelectTrigger>
                     <SelectContent>
-                      {approvers.map((approver) => (
-                        <SelectItem key={approver} value={approver}>
-                          {approver}
+                      {approvers.map((a) => (
+                        <SelectItem key={a} value={a}>
+                          {a}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -338,8 +395,8 @@ export default function Stage2() {
                   </Label>
                   <Select
                     value={approvalForm.status}
-                    onValueChange={(val) =>
-                      setApprovalForm({ ...approvalForm, status: val })
+                    onValueChange={(v) =>
+                      setApprovalForm((p) => ({ ...p, status: v }))
                     }
                     required
                   >
@@ -362,10 +419,10 @@ export default function Stage2() {
                     placeholder="Leave blank for full quantity"
                     value={approvalForm.approvedQty}
                     onChange={(e) =>
-                      setApprovalForm({
-                        ...approvalForm,
+                      setApprovalForm((p) => ({
+                        ...p,
                         approvedQty: e.target.value,
-                      })
+                      }))
                     }
                   />
                 </div>
@@ -375,8 +432,8 @@ export default function Stage2() {
                   <Label htmlFor="vendorType">Vendor Type</Label>
                   <Select
                     value={approvalForm.vendorType}
-                    onValueChange={(val) =>
-                      setApprovalForm({ ...approvalForm, vendorType: val })
+                    onValueChange={(v) =>
+                      setApprovalForm((p) => ({ ...p, vendorType: v }))
                     }
                   >
                     <SelectTrigger>
@@ -396,15 +453,14 @@ export default function Stage2() {
                 <Textarea
                   id="remarks"
                   placeholder="Add remarks..."
+                  rows={3}
                   value={approvalForm.remarks}
                   onChange={(e) =>
-                    setApprovalForm({ ...approvalForm, remarks: e.target.value })
+                    setApprovalForm((p) => ({ ...p, remarks: e.target.value }))
                   }
-                  rows={3}
                 />
               </div>
 
-              {/* Actions */}
               <DialogFooter>
                 <Button
                   type="button"
@@ -417,7 +473,9 @@ export default function Stage2() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={!isFormValid}>
-                  {approvalForm.status === "approved" ? "Approve & Send" : "Reject Selected"}
+                  {approvalForm.status === "approved"
+                    ? "Approve & Send"
+                    : "Reject Selected"}
                 </Button>
               </DialogFooter>
             </form>

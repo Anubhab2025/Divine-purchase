@@ -4,6 +4,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut } from "lucide-react";
 
+// Add this to your global CSS file or in a style tag in _app.tsx
+// .scrollbar-hide {
+//   -ms-overflow-style: none;  /* IE and Edge */
+//   scrollbar-width: none;  /* Firefox */
+// }
+// .scrollbar-hide::-webkit-scrollbar {
+//   display: none;  /* Chrome, Safari and Opera */
+// }
+
 const stages = [
   { num: 1, name: "Create Indent" },
   { num: 2, name: "Indent Approval" },
@@ -60,7 +69,7 @@ export default function Sidebar({
         className={`fixed lg:static top-0 left-0 h-full lg:h-auto w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-300 ease-in-out z-40 
         ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
-        <div className="p-4 overflow-y-auto h-full">
+        <div className="p-4 overflow-y-auto h-full scrollbar-hide">
           <div className="hidden lg:block">
             <h1 className="text-xl font-bold text-sidebar-foreground mb-6">
               Purchase Workflow
