@@ -1,28 +1,7 @@
 "use client";
 
-import type React from "react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useWorkflow } from "@/lib/workflow-context";
-import { StageTable } from "./stage-table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -32,131 +11,285 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  FileText,
-  Upload,
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,        // ADDED THIS
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Upload } from "lucide-react";
 
 export default function Stage14() {
-  const { records, moveToNextStage, updateRecord } = useWorkflow();
+  const { records = [], updateRecord, moveToNextStage } = useWorkflow() || {};
+
   const [open, setOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"pending" | "history">("pending");
+  const [activeTab, setActiveTab] = useState<"pending" | "completed">("pending");
+
   const [formData, setFormData] = useState({
     freightNumber: "",
+    transportName: "",
+    biltyNumber: "",
     paymentAmount: "",
     report: "",
-    transportName: "",
-    biltyImage: null as File | null,
-    biltyNumber: "",
     totalPayment: "",
     totalPaid: "",
     pending: "",
+    biltyImage: null as File | null,
     invoiceImage: null as File | null,
+    invoiceCopy: null as File | null,
+    poInvoiceNumber: "",
+    transporterDetails: "",
+    vendorName: "",
+    vehicleNo: "",
+    lrNo: "",
+    lrImage: null as File | null,
+    paymentForm: "",
+    amount: "",
+    summaryReport: "",
   });
 
-  const pending = records.filter(
-    (r) => r.stage === 14 && r.status === "pending"
-  );
-  const completed = records.filter((r) =>
-    r.stage > 14 || (r.stage === 14 && r.status !== "pending")
+  // -----------------------------------------------------------------
+  // FILTER RECORDS
+  // -----------------------------------------------------------------
+  const pending = (records || []).filter(
+    (r: any) => r?.stage === 14 && r?.status === "pending"
   );
 
-  const pendingColumns = [
+  const completed = (records || []).filter((r: any) =>
+    Array.isArray(r?.history) ? r.history.some((h: any) => h?.stage === 14) : false
+  );
+
+  // -----------------------------------------------------------------
+  // ALL COLUMNS – 60+ + NEW (HIDE Stage 14 fields in Pending)
+  // -----------------------------------------------------------------
+  const columns = [
     { key: "indentNumber", label: "Indent #" },
     { key: "createdBy", label: "Created By" },
     { key: "category", label: "Category" },
     { key: "itemName", label: "Item" },
     { key: "quantity", label: "Qty" },
     { key: "warehouse", label: "Warehouse" },
+    { key: "vendor", label: "Vendor" },
+    { key: "ratePerQty", label: "Rate/Qty" },
+    { key: "paymentTerms", label: "Payment Terms" },
     { key: "deliveryDate", label: "Exp. Delivery" },
+    { key: "warranty", label: "Warranty" },
+    { key: "poAttachment", label: "PO Attachment" },
+    { key: "approvedBy", label: "Approved By" },
     { key: "poNumber", label: "PO Number" },
-    { key: "liftNumber", label: "Lift Number" },
+    { key: "basicValue", label: "Basic Value" },
+    { key: "totalWithTax", label: "Total w/Tax" },
+    { key: "poCopy", label: "PO Copy" },
+    { key: "liftNumber", label: "Lift #" },
+    { key: "liftQty", label: "Lift Qty" },
+    { key: "transporter", label: "Transporter" },
+    { key: "lrNumber", label: "LR #" },
+    { key: "freight", label: "Freight" },
+    { key: "advanceAmount", label: "Adv. Amt" },
+    { key: "paymentDate", label: "Pay Date" },
+    { key: "biltyNumber", label: "Bilty #" },
     { key: "invoiceNumber", label: "Invoice #" },
+    { key: "invoiceDate", label: "Invoice Date" },
+    { key: "srnNumber", label: "SRN #" },
+    { key: "qcRequired", label: "QC Required" },
+    { key: "receivedItemImage", label: "Rec. Item Img" },
+    { key: "hydraAmount", label: "Hydra Amt" },
+    { key: "labourAmount", label: "Labour Amt" },
+    { key: "hemaliAmount", label: "Hemali Amt" },
+    { key: "qcBy", label: "QC Done By" },
+    { key: "qcDate", label: "QC Date" },
+    { key: "qcStatus", label: "QC Status" },
+    { key: "rejectQty", label: "Reject Qty" },
+    { key: "rejectRemarks", label: "Reject Remarks" },
+    { key: "qcReturnStatus", label: "Return Status" },
+    { key: "qcRemarks", label: "QC Remarks" },
+    { key: "doneBy", label: "Tally Done By" },
+    { key: "submissionDate", label: "Tally Date" },
+    { key: "remarks", label: "Tally Remarks" },
+    { key: "handoverBy", label: "Handover By" },
+    { key: "receivedBy", label: "Received By (Stage 10)" },
+    { key: "invoiceSubmissionDate", label: "Invoice Submission Date" },
+    { key: "verifiedReceivedBy", label: "Verified – Received By" },
+    { key: "verifiedCheckedBy", label: "Verified – Checked By" },
+    { key: "verificationDate", label: "Verification Date" },
+    { key: "verificationRemarks", label: "Verification Remarks" },
+    { key: "amount", label: "Amount" },
+    { key: "vendorPayment", label: "Vendor Payment" },
+    { key: "paymentDueDate", label: "Payment Due Date" },
+    { key: "paymentStatus", label: "Payment Status" },
+    { key: "paymentProof", label: "Payment Proof" },
+    { key: "totalPaid", label: "Total Paid" },
+    { key: "pendingAmount", label: "Pending Amount" },
+    { key: "returnedQty", label: "Returned Qty" },
+    { key: "returnRate", label: "Return Rate" },
+    { key: "returnReason", label: "Return Reason" },
+    { key: "returnRemarks", label: "Return Remarks" },
+    { key: "returnPhoto", label: "Return Photo" },
+    { key: "returnAttachment", label: "Return Attachment" },
+    // Stage 14 – HIDDEN IN PENDING
+    { key: "freightNumber", label: "Freight #", hideInPending: true },
+    { key: "transportName", label: "Transport", hideInPending: true },
+    { key: "biltyNumber", label: "Bilty #", hideInPending: true },
+    { key: "paymentAmount", label: "Payment Amount", hideInPending: true },
+    { key: "report", label: "Report", hideInPending: true },
+    { key: "totalPayment", label: "Total Payment", hideInPending: true },
+    { key: "totalPaid", label: "Freight Paid", hideInPending: true },
+    { key: "pending", label: "Pending (Freight)", hideInPending: true },
+    { key: "biltyImage", label: "Bilty Image", hideInPending: true },
+    { key: "invoiceImage", label: "Invoice Image", hideInPending: true },
+    { key: "invoiceCopy", label: "Invoice Copy", hideInPending: true },
+    { key: "poInvoiceNumber", label: "PO Invoice #", hideInPending: true },
+    { key: "transporterDetails", label: "Transporter Details", hideInPending: true },
+    { key: "vendorName", label: "Vendor Name", hideInPending: true },
+    { key: "vehicleNo", label: "Vehicle No", hideInPending: true },
+    { key: "lrNo", label: "LR No", hideInPending: true },
+    { key: "lrImage", label: "LR Image", hideInPending: true },
+    { key: "paymentForm", label: "Payment Form", hideInPending: true },
+    { key: "amount", label: "Amount", hideInPending: true },
+    { key: "summaryReport", label: "Summary Report", hideInPending: true },
   ];
 
-  const historyColumns = [
-    { key: "indentNumber", label: "Indent #" },
-    { key: "createdBy", label: "Created By" },
-    { key: "category", label: "Category" },
-    { key: "itemName", label: "Item" },
-    { key: "quantity", label: "Qty" },
-    { key: "warehouse", label: "Warehouse" },
-    { key: "deliveryDate", label: "Exp. Delivery" },
-    { key: "poNumber", label: "PO Number" },
-    { key: "liftNumber", label: "Lift Number" },
-    { key: "invoiceNumber", label: "Invoice #" },
-    { key: "freightNumber", label: "Freight #" },
-    { key: "transportName", label: "Transport" },
-    { key: "totalFreight", label: "Total Amount" },
-  ];
+  const pendingColumns = columns.filter(col => !col.hideInPending);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(
+    pendingColumns.map(c => c.key)
+  );
 
-  const [selectedPendingColumns, setSelectedPendingColumns] = useState<string[]>(pendingColumns.map(col => col.key));
-  const [selectedHistoryColumns, setSelectedHistoryColumns] = useState<string[]>(historyColumns.map(col => col.key));
-
-  // Auto-calculate pending amount
+  // -----------------------------------------------------------------
+  // AUTO CALCULATE PENDING
+  // -----------------------------------------------------------------
   useEffect(() => {
-    if (formData.totalPayment && formData.totalPaid) {
-      const total = parseFloat(formData.totalPayment) || 0;
-      const paid = parseFloat(formData.totalPaid) || 0;
-      setFormData((prev) => ({
-        ...prev,
-        pending: (total - paid).toFixed(2),
-      }));
-    }
+    const total = parseFloat(formData.totalPayment) || 0;
+    const paid = parseFloat(formData.totalPaid) || 0;
+    setFormData(prev => ({ ...prev, pending: (total - paid).toFixed(2) }));
   }, [formData.totalPayment, formData.totalPaid]);
 
+  // -----------------------------------------------------------------
+  // OPEN MODAL
+  // -----------------------------------------------------------------
   const handleOpenForm = (recordId: string) => {
+    const rec = records.find((r: any) => r.id === recordId);
+    if (!rec) return;
+
     setSelectedRecord(recordId);
     setFormData({
       freightNumber: `FR-${Date.now().toString().slice(-6)}`,
+      transportName: rec.data?.transporter || "",
+      biltyNumber: rec.data?.biltyNumber || "",
       paymentAmount: "",
       report: "",
-      transportName: "",
-      biltyImage: null,
-      biltyNumber: "",
-      totalPayment: "",
+      totalPayment: rec.data?.freight || "",
       totalPaid: "",
       pending: "",
+      biltyImage: null,
       invoiceImage: null,
+      invoiceCopy: null,
+      poInvoiceNumber: rec.data?.invoiceNumber || "",
+      transporterDetails: "",
+      vendorName: rec.data?.vendor || "",
+      vehicleNo: "",
+      lrNo: rec.data?.lrNumber || "",
+      lrImage: null,
+      paymentForm: "",
+      amount: "",
+      summaryReport: "",
     });
     setOpen(true);
   };
 
+  // -----------------------------------------------------------------
+  // SUBMIT
+  // -----------------------------------------------------------------
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedRecord && isFormValid) {
-      updateRecord(selectedRecord, formData);
-      moveToNextStage(selectedRecord);
-      setOpen(false);
-      setSelectedRecord(null);
-      setFormData({
-        freightNumber: "",
-        paymentAmount: "",
-        report: "",
-        transportName: "",
-        biltyImage: null,
-        biltyNumber: "",
-        totalPayment: "",
-        totalPaid: "",
-        pending: "",
-        invoiceImage: null,
-      });
-    }
+    if (!selectedRecord) return;
+
+    const payload = {
+      ...formData,
+      biltyImage: formData.biltyImage?.name || null,
+      invoiceImage: formData.invoiceImage?.name || null,
+      invoiceCopy: formData.invoiceCopy?.name || null,
+      lrImage: formData.lrImage?.name || null,
+    };
+
+    updateRecord(selectedRecord, payload);
+    moveToNextStage(selectedRecord);
+
+    setOpen(false);
+    setSelectedRecord(null);
+    setFormData({
+      freightNumber: "",
+      transportName: "",
+      biltyNumber: "",
+      paymentAmount: "",
+      report: "",
+      totalPayment: "",
+      totalPaid: "",
+      pending: "",
+      biltyImage: null,
+      invoiceImage: null,
+      invoiceCopy: null,
+      poInvoiceNumber: "",
+      transporterDetails: "",
+      vendorName: "",
+      vehicleNo: "",
+      lrNo: "",
+      lrImage: null,
+      paymentForm: "",
+      amount: "",
+      summaryReport: "",
+    });
   };
 
   const isFormValid =
     formData.transportName &&
     formData.biltyNumber &&
-    formData.paymentAmount;
+    formData.paymentAmount &&
+    formData.paymentForm &&
+    formData.amount &&
+    formData.summaryReport;
 
-  const handleFileRemove = (field: "biltyImage" | "invoiceImage") => {
-    setFormData({ ...formData, [field]: null });
+  // -----------------------------------------------------------------
+  // SAFE VALUE
+  // -----------------------------------------------------------------
+  const safeValue = (record: any, key: string, isHistory = false) => {
+    try {
+      const data = isHistory
+        ? record?.history?.find((h: any) => h?.stage === 14)?.data || record?.data
+        : record?.data;
+
+      const val = data?.[key];
+      if (val === undefined || val === null) return "-";
+      return key.includes("Date") && val
+        ? new Date(val).toLocaleDateString("en-IN")
+        : String(val);
+    } catch {
+      return "-";
+    }
   };
+
+  // -----------------------------------------------------------------
+  // RENDER
+  // -----------------------------------------------------------------
+  if (!records) {
+    return <div className="p-6 text-center text-red-600">Loading…</div>;
+  }
 
   return (
     <div className="p-6">
-      {/* Header Card with Title and Column Filters */}
+      {/* HEADER */}
       <div className="mb-6 p-6 bg-white border rounded-lg shadow-sm">
         <div className="flex items-center justify-between">
           <div>
@@ -164,151 +297,90 @@ export default function Stage14() {
             <p className="text-gray-600 mt-1">Process transport and handling charges</p>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4">
-              <Label className="text-sm font-medium">Pending Columns:</Label>
-              <Select
-                value=""
-                onValueChange={() => {}}
-              >
-                <SelectTrigger className="w-56">
-                  <SelectValue placeholder={`${selectedPendingColumns.length} selected`} />
-                </SelectTrigger>
-                <SelectContent className="w-56">
-                  <div className="p-2">
-                    <div className="flex items-center space-x-2 mb-2 pb-2 border-b">
-                      <Checkbox
-                        checked={selectedPendingColumns.length === pendingColumns.length}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedPendingColumns(pendingColumns.map(col => col.key));
-                          } else {
-                            setSelectedPendingColumns([]);
-                          }
-                        }}
-                      />
-                      <Label className="text-sm font-medium">All Columns</Label>
-                    </div>
-                    {pendingColumns.map((col) => (
-                      <div key={col.key} className="flex items-center space-x-2 py-1">
-                        <Checkbox
-                          checked={selectedPendingColumns.includes(col.key)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedPendingColumns([...selectedPendingColumns, col.key]);
-                            } else {
-                              setSelectedPendingColumns(selectedPendingColumns.filter(c => c !== col.key));
-                            }
-                          }}
-                        />
-                        <Label className="text-sm">{col.label}</Label>
-                      </div>
-                    ))}
+          <div className="flex items-center gap-4">
+            <Label className="text-sm font-medium">Show Columns:</Label>
+            <Select value="" onValueChange={() => {}}>
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder={`${selectedColumns.length} selected`} />
+              </SelectTrigger>
+              <SelectContent className="w-64 max-h-96 overflow-y-auto">
+                <div className="p-2">
+                  <div className="flex items-center space-x-2 mb-2 pb-2 border-b">
+                    <Checkbox
+                      checked={selectedColumns.length === pendingColumns.length}
+                      onCheckedChange={(c) =>
+                        setSelectedColumns(c ? pendingColumns.map(x => x.key) : [])
+                      }
+                    />
+                    <Label className="text-sm font-medium">All</Label>
                   </div>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Label className="text-sm font-medium">History Columns:</Label>
-              <Select
-                value=""
-                onValueChange={() => {}}
-              >
-                <SelectTrigger className="w-56">
-                  <SelectValue placeholder={`${selectedHistoryColumns.length} selected`} />
-                </SelectTrigger>
-                <SelectContent className="w-56">
-                  <div className="p-2">
-                    <div className="flex items-center space-x-2 mb-2 pb-2 border-b">
+                  {pendingColumns.map((col) => (
+                    <div key={col.key} className="flex items-center space-x-2 py-1">
                       <Checkbox
-                        checked={selectedHistoryColumns.length === historyColumns.length}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedHistoryColumns(historyColumns.map(col => col.key));
-                          } else {
-                            setSelectedHistoryColumns([]);
-                          }
-                        }}
+                        checked={selectedColumns.includes(col.key)}
+                        onCheckedChange={(c) =>
+                          setSelectedColumns(
+                            c
+                              ? [...selectedColumns, col.key]
+                              : selectedColumns.filter((x) => x !== col.key)
+                          )
+                        }
                       />
-                      <Label className="text-sm font-medium">All Columns</Label>
+                      <Label className="text-sm">{col.label}</Label>
                     </div>
-                    {historyColumns.map((col) => (
-                      <div key={col.key} className="flex items-center space-x-2 py-1">
-                        <Checkbox
-                          checked={selectedHistoryColumns.includes(col.key)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedHistoryColumns([...selectedHistoryColumns, col.key]);
-                            } else {
-                              setSelectedHistoryColumns(selectedHistoryColumns.filter(c => c !== col.key));
-                            }
-                          }}
-                        />
-                        <Label className="text-sm">{col.label}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </SelectContent>
-              </Select>
-            </div>
+                  ))}
+                </div>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => setActiveTab(v as any)}
-        className="w-full"
-      >
+      {/* TABS */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="pending">
-            Pending ({pending.length})
-          </TabsTrigger>
-          <TabsTrigger value="history">
-            History ({completed.length})
-          </TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
+          <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
         </TabsList>
 
-        {/* Pending Tab */}
+        {/* PENDING */}
         <TabsContent value="pending" className="mt-6">
           {pending.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-lg text-gray-500">No pending freight payments</p>
-              <p className="text-sm text-gray-400 mt-1">All transports paid!</p>
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg">No pending freight payments</p>
             </div>
           ) : (
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Record ID</TableHead>
-                    {pendingColumns.filter(col => selectedPendingColumns.includes(col.key)).map((col) => (
-                      <TableHead key={col.key}>
-                        {col.label}
-                      </TableHead>
-                    ))}
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="sticky left-0 bg-white z-10">ID</TableHead>
+                    {pendingColumns
+                      .filter((c) => selectedColumns.includes(c.key))
+                      .map((col) => (
+                        <TableHead key={col.key}>{col.label}</TableHead>
+                      ))}
+                    <TableHead className="sticky right-0 bg-white z-10">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pending.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="font-mono text-xs">
-                        {record.id}
+                  {pending.map((rec: any) => (
+                    <TableRow key={rec.id}>
+                      <TableCell className="font-mono text-xs sticky left-0 bg-white z-10">
+                        {rec.id}
                       </TableCell>
-                      {pendingColumns.filter(col => selectedPendingColumns.includes(col.key)).map((col) => (
-                        <TableCell key={col.key}>
-                          {col.key === "deliveryDate"
-                            ? new Date(record.data[col.key]).toLocaleDateString("en-IN")
-                            : String(record.data[col.key] || "-")}
-                        </TableCell>
-                      ))}
-                      <TableCell>
+                      {pendingColumns
+                        .filter((c) => selectedColumns.includes(c.key))
+                        .map((col) => (
+                          <TableCell key={col.key}>
+                            {safeValue(rec, col.key)}
+                          </TableCell>
+                        ))}
+                      <TableCell className="sticky right-0 bg-white z-10">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleOpenForm(record.id)}
+                          onClick={() => handleOpenForm(rec.id)}
                         >
                           Process Payment
                         </Button>
@@ -321,254 +393,312 @@ export default function Stage14() {
           )}
         </TabsContent>
 
-        {/* History Tab */}
-        <TabsContent value="history" className="mt-6">
-          <StageTable
-            title=""
-            stage={14}
-            pending={[]}
-            history={completed}
-            onOpenForm={() => {}}
-            onSelectRecord={() => {}}
-            columns={historyColumns.filter(col => selectedHistoryColumns.includes(col.key))}
-            showPending={false}
-          />
+        {/* COMPLETED (HISTORY) */}
+        <TabsContent value="completed" className="mt-6">
+          {completed.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg">No freight payments processed yet</p>
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky left-0 bg-white z-10">ID</TableHead>
+                    {columns.map((col) => (
+                      <TableHead key={col.key}>{col.label}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {completed.map((rec: any) => (
+                    <TableRow key={rec.id}>
+                      <TableCell className="font-mono text-xs sticky left-0 bg-white z-10">
+                        {rec.id}
+                      </TableCell>
+                      {columns.map((col) => (
+                        <TableCell key={col.key}>
+                          {safeValue(rec, col.key, true)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
-      {/* Freight Dialog */}
+      {/* MODAL */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
             <DialogTitle>Freight Payment Processing</DialogTitle>
-            <p className="text-sm text-gray-600">
-              Record transport, handling, and freight charges.
-            </p>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                {/* Freight No. */}
-                <div className="space-y-2">
-                  <Label>Freight No.</Label>
-                  <Input
-                    value={formData.freightNumber}
-                    readOnly
-                    className="bg-gray-50"
-                  />
-                </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
 
-                {/* Transport Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="transportName">Transport Name <span className="text-red-500">*</span></Label>
+              {/* Freight & Transport */}
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Freight No.</Label>
+                  <Input value={formData.freightNumber} readOnly className="bg-gray-50" />
+                </div>
+                <div>
+                  <Label htmlFor="transportName">Transport Name *</Label>
                   <Input
                     id="transportName"
                     value={formData.transportName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, transportName: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, transportName: e.target.value })}
                     required
-                    placeholder="e.g. Sharma Logistics"
                   />
                 </div>
-
-                {/* Bilty Number */}
-                <div className="space-y-2">
-                  <Label htmlFor="biltyNumber">Bilty Number <span className="text-red-500">*</span></Label>
+                <div>
+                  <Label htmlFor="biltyNumber">Bilty Number *</Label>
                   <Input
                     id="biltyNumber"
                     value={formData.biltyNumber}
-                    onChange={(e) =>
-                      setFormData({ ...formData, biltyNumber: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, biltyNumber: e.target.value })}
                     required
-                    placeholder="e.g. BIL-2025-001"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Payment Amount */}
-                <div className="space-y-2">
-                  <Label htmlFor="paymentAmount">Payment Amount <span className="text-red-500">*</span></Label>
+              {/* NEW FIELDS */}
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="poInvoiceNumber">PO Invoice #</Label>
+                  <Input
+                    id="poInvoiceNumber"
+                    value={formData.poInvoiceNumber}
+                    onChange={(e) => setFormData({ ...formData, poInvoiceNumber: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vendorName">Vendor Name</Label>
+                  <Input
+                    id="vendorName"
+                    value={formData.vendorName}
+                    onChange={(e) => setFormData({ ...formData, vendorName: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vehicleNo">Vehicle No</Label>
+                  <Input
+                    id="vehicleNo"
+                    value={formData.vehicleNo}
+                    onChange={(e) => setFormData({ ...formData, vehicleNo: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="lrNo">LR No</Label>
+                  <Input
+                    id="lrNo"
+                    value={formData.lrNo}
+                    onChange={(e) => setFormData({ ...formData, lrNo: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="transporterDetails">Transporter Details</Label>
+                  <Input
+                    id="transporterDetails"
+                    value={formData.transporterDetails}
+                    onChange={(e) => setFormData({ ...formData, transporterDetails: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="paymentAmount">Payment Amount *</Label>
                   <Input
                     id="paymentAmount"
                     type="number"
                     step="0.01"
                     value={formData.paymentAmount}
-                    onChange={(e) =>
-                      setFormData({ ...formData, paymentAmount: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, paymentAmount: e.target.value })}
                     required
-                    placeholder="0.00"
-                  />
-                </div>
-
-                {/* Report */}
-                <div className="space-y-2">
-                  <Label htmlFor="report">Report</Label>
-                  <Input
-                    id="report"
-                    value={formData.report}
-                    onChange={(e) =>
-                      setFormData({ ...formData, report: e.target.value })
-                    }
-                    placeholder="Enter report details"
                   />
                 </div>
               </div>
 
+              {/* Payment Form & Amount */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="paymentForm">Payment Form *</Label>
+                  <Select
+                    value={formData.paymentForm}
+                    onValueChange={(v) => setFormData({ ...formData, paymentForm: v })}
+                  >
+                    <SelectTrigger id="paymentForm">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="cheque">Cheque</SelectItem>
+                      <SelectItem value="online">Online</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="amount">Amount *</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Total Payment, Paid, Pending */}
               <div className="grid grid-cols-3 gap-4">
-                {/* Total Payment */}
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="totalPayment">Total Payment</Label>
                   <Input
                     id="totalPayment"
                     type="number"
                     step="0.01"
                     value={formData.totalPayment}
-                    onChange={(e) =>
-                      setFormData({ ...formData, totalPayment: e.target.value })
-                    }
-                    placeholder="0.00"
+                    onChange={(e) => setFormData({ ...formData, totalPayment: e.target.value })}
                   />
                 </div>
-
-                {/* Total Paid */}
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="totalPaid">Total Paid</Label>
                   <Input
                     id="totalPaid"
                     type="number"
                     step="0.01"
                     value={formData.totalPaid}
-                    onChange={(e) =>
-                      setFormData({ ...formData, totalPaid: e.target.value })
-                    }
-                    placeholder="0.00"
+                    onChange={(e) => setFormData({ ...formData, totalPaid: e.target.value })}
                   />
                 </div>
-
-                {/* Pending */}
-                <div className="space-y-2">
-                  <Label htmlFor="pending">Pending</Label>
-                  <Input
-                    id="pending"
-                    value={formData.pending}
-                    readOnly
-                    className="bg-gray-50"
-                  />
+                <div>
+                  <Label>Pending</Label>
+                  <Input value={formData.pending} readOnly className="bg-gray-50" />
                 </div>
               </div>
 
               {/* File Uploads */}
               <div className="grid grid-cols-2 gap-4">
-                {/* Bilty image */}
-                <div className="space-y-2">
-                  <Label htmlFor="biltyImage">Bilty image</Label>
-                  <div>
-                    <input
-                      id="biltyImage"
-                      type="file"
-                      accept=".jpg,.jpeg,.png"
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          biltyImage: e.target.files?.[0] || null,
-                        })
-                      }
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="biltyImage"
-                      className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400"
-                    >
-                      <Upload className="w-6 h-6 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-600">Upload Bilty Image</span>
-                    </label>
-                    {formData.biltyImage && (
-                      <div className="mt-2 p-2 bg-gray-50 border rounded flex items-center justify-between">
-                        <div className="flex items-center">
-                          <FileText className="w-4 h-4 text-gray-500 mr-2" />
-                          <span className="text-sm text-gray-700">
-                            {formData.biltyImage.name}
-                          </span>
-                          <span className="text-xs text-gray-600 ml-2">
-                            ({(formData.biltyImage.size / 1024).toFixed(1)} KB)
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleFileRemove("biltyImage")}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          X
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                <div>
+                  <Label htmlFor="biltyImage">Bilty Image</Label>
+                  <input
+                    id="biltyImage"
+                    type="file"
+                    accept=".jpg,.jpeg,.png"
+                    onChange={(e) => setFormData({ ...formData, biltyImage: e.target.files?.[0] || null })}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="biltyImage"
+                    className="flex items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-gray-400"
+                  >
+                    <Upload className="w-6 h-6 text-gray-400 mr-2" />
+                    <span className="text-sm text-gray-600">
+                      {formData.biltyImage ? formData.biltyImage.name : "Upload Bilty"}
+                    </span>
+                  </label>
                 </div>
 
-                {/* Invoice Image */}
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="invoiceImage">Invoice Image</Label>
-                  <div>
-                    <input
-                      id="invoiceImage"
-                      type="file"
-                      accept=".jpg,.jpeg,.png,.pdf"
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          invoiceImage: e.target.files?.[0] || null,
-                        })
-                      }
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="invoiceImage"
-                      className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400"
-                    >
-                      <Upload className="w-6 h-6 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-600">Upload Invoice Image</span>
-                    </label>
-                    {formData.invoiceImage && (
-                      <div className="mt-2 p-2 bg-gray-50 border rounded flex items-center justify-between">
-                        <div className="flex items-center">
-                          <FileText className="w-4 h-4 text-gray-500 mr-2" />
-                          <span className="text-sm text-gray-700">
-                            {formData.invoiceImage.name}
-                          </span>
-                          <span className="text-xs text-gray-600 ml-2">
-                            ({(formData.invoiceImage.size / 1024).toFixed(1)} KB)
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleFileRemove("invoiceImage")}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          X
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <input
+                    id="invoiceImage"
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={(e) => setFormData({ ...formData, invoiceImage: e.target.files?.[0] || null })}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="invoiceImage"
+                    className="flex items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-gray-400"
+                  >
+                    <Upload className="w-6 h-6 text-gray-400 mr-2" />
+                    <span className="text-sm text-gray-600">
+                      {formData.invoiceImage ? formData.invoiceImage.name : "Upload Invoice"}
+                    </span>
+                  </label>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="invoiceCopy">Invoice Copy</Label>
+                  <input
+                    id="invoiceCopy"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => setFormData({ ...formData, invoiceCopy: e.target.files?.[0] || null })}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="invoiceCopy"
+                    className="flex items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-gray-400"
+                  >
+                    <Upload className="w-6 h-6 text-gray-400 mr-2" />
+                    <span className="text-sm text-gray-600">
+                      {formData.invoiceCopy ? formData.invoiceCopy.name : "Upload Invoice Copy"}
+                    </span>
+                  </label>
+                </div>
+
+                <div>
+                  <Label htmlFor="lrImage">LR Image</Label>
+                  <input
+                    id="lrImage"
+                    type="file"
+                    accept=".jpg,.jpeg,.png"
+                    onChange={(e) => setFormData({ ...formData, lrImage: e.target.files?.[0] || null })}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="lrImage"
+                    className="flex items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-gray-400"
+                  >
+                    <Upload className="w-6 h-6 text-gray-400 mr-2" />
+                    <span className="text-sm text-gray-600">
+                      {formData.lrImage ? formData.lrImage.name : "Upload LR Image"}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Summary Report */}
+              <div>
+                <Label htmlFor="summaryReport">Summary Report *</Label>
+                <textarea
+                  id="summaryReport"
+                  value={formData.summaryReport}
+                  onChange={(e) => setFormData({ ...formData, summaryReport: e.target.value })}
+                  rows={4}
+                  className="w-full px-3 py-2 border rounded resize-none"
+                  placeholder="Enter summary of freight payment, transporter details, and any remarks..."
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="report">Additional Report</Label>
+                <Input
+                  id="report"
+                  value={formData.report}
+                  onChange={(e) => setFormData({ ...formData, report: e.target.value })}
+                  placeholder="Any extra notes..."
+                />
               </div>
             </form>
           </div>
 
-          {/* Actions - Fixed at bottom */}
-          <DialogFooter className="flex-shrink-0 border-t pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!isFormValid} onClick={handleSubmit}>
+            <Button onClick={handleSubmit} disabled={!isFormValid}>
               Complete Process
             </Button>
           </DialogFooter>

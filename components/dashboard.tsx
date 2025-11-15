@@ -35,7 +35,6 @@ import {
   Tooltip,
 } from "recharts";
 import {
-  Package,
   Truck,
   CheckCircle,
   Clock,
@@ -45,7 +44,18 @@ import {
   Calendar,
   FileText,
   TrendingUp,
+  Plus,
+  Package,
+  Users,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 // === NEW DATA (DIFFERENT FROM MOCK) ===
 const inTransitData = [
@@ -327,6 +337,34 @@ export default function PurchaseDashboard() {
   const [receivedSearch, setReceivedSearch] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
 
+  // Forms modal states
+  const [formsMenuOpen, setFormsMenuOpen] = useState(false);
+  const [itemFormOpen, setItemFormOpen] = useState(false);
+  const [vendorFormOpen, setVendorFormOpen] = useState(false);
+  const [transporterFormOpen, setTransporterFormOpen] = useState(false);
+
+  // Form data states
+  const [itemForm, setItemForm] = useState({
+    category: "",
+    itemName: "",
+    uom: "",
+  });
+
+  const [vendorForm, setVendorForm] = useState({
+    vendorName: "",
+    contactPerson: "",
+    phone: "",
+    email: "",
+    address: "",
+  });
+
+  const [transporterForm, setTransporterForm] = useState({
+    transporterName: "",
+    contactPerson: "",
+    phone: "",
+    vehicleType: "",
+  });
+
   // Sort states
   const [inTransitSort, setInTransitSort] = useState({ key: "date", direction: "desc" });
   const [receivedSort, setReceivedSort] = useState({ key: "date", direction: "desc" });
@@ -338,15 +376,15 @@ export default function PurchaseDashboard() {
   const uniqueMaterials = [...new Set(allData.map(item => item.material))].sort();
 
   // Helper function to parse date dd-mm-yyyy
-  const parseDate = (dateStr) => {
+  const parseDate = (dateStr: string) => {
     if (!dateStr) return null;
     const [day, month, year] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day);
   };
 
   // Filtering function
-  const applyFilters = (data, dataType) => {
-    return data.filter((item) => {
+  const applyFilters = (data: any[], dataType: string) => {
+    return data.filter((item: any) => {
       // Date filter
       if (dateFrom || dateTo) {
         const itemDate = parseDate(item.date);
@@ -380,8 +418,8 @@ export default function PurchaseDashboard() {
   const filteredPendingData = applyFilters(pendingData, "pending");
 
   // Sorting function
-  const sortData = (data, sortConfig) => {
-    return [...data].sort((a, b) => {
+  const sortData = (data: any[], sortConfig: any) => {
+    return [...data].sort((a: any, b: any) => {
       let aVal = a[sortConfig.key];
       let bVal = b[sortConfig.key];
 
@@ -405,9 +443,9 @@ export default function PurchaseDashboard() {
   const sortedPendingData = sortData(filteredPendingData, pendingSort);
 
   // Apply search
-  const searchData = (data, searchTerm) => {
+  const searchData = (data: any[], searchTerm: string) => {
     if (!searchTerm) return data;
-    return data.filter((item) =>
+    return data.filter((item: any) =>
       item.erp.toString().includes(searchTerm.toLowerCase()) ||
       item.material.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.party.toLowerCase().includes(searchTerm.toLowerCase())
@@ -419,13 +457,13 @@ export default function PurchaseDashboard() {
   const finalPendingData = searchData(sortedPendingData, pendingSearch);
 
   // Export to CSV function
-  const exportToCSV = (data, filename) => {
+  const exportToCSV = (data: any[], filename: string) => {
     if (data.length === 0) return;
 
     const headers = Object.keys(data[0]);
     const csvContent = [
       headers.join(','),
-      ...data.map(row => headers.map(header => `"${row[header]}"`).join(','))
+      ...data.map((row: any) => headers.map(header => `"${row[header]}"`).join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -441,6 +479,24 @@ export default function PurchaseDashboard() {
 
   return (
     <div className="p-4 md:p-6 space-y-6 bg-gray-50 min-h-screen">
+      {/* Header with Forms Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Purchase Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Monitor and manage your purchase orders</p>
+        </div>
+        <Button 
+          onClick={() => {
+            console.log("Forms button clicked");
+            setFormsMenuOpen(true);
+          }} 
+          className="flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Forms
+        </Button>
+      </div>
+
       {/* Smart Filters */}
       <Card className="border shadow-sm">
         <CardHeader className="pb-3">
@@ -454,21 +510,23 @@ export default function PurchaseDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="dd-mm-yyyy"
-                className="h-9 text-xs"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
-              <span className="text-xs text-muted-foreground">to</span>
-              <Input
-                placeholder="dd-mm-yyyy"
-                className="h-9 text-xs"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
+            <div className="sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <Input
+                  placeholder="dd-mm-yyyy"
+                  className="h-9 text-xs"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+                <span className="text-xs text-muted-foreground flex-shrink-0">to</span>
+                <Input
+                  placeholder="dd-mm-yyyy"
+                  className="h-9 text-xs"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
             </div>
             <Select value={selectedParty} onValueChange={setSelectedParty}>
               <SelectTrigger className="h-9 text-xs">
@@ -599,7 +657,7 @@ export default function PurchaseDashboard() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -629,7 +687,7 @@ export default function PurchaseDashboard() {
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="flex justify-center gap-6 mt-2 text-xs">
+                <div className="flex flex-wrap justify-center gap-4 mt-2 text-xs">
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
                     <span>Complete: 88%</span>
@@ -645,94 +703,119 @@ export default function PurchaseDashboard() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium">
-                  Top Vendors
+                  Top Materials
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  Leading suppliers by order count
+                  Most ordered materials by quantity
                 </p>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={vendorBarData} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" hide />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      width={80}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <Tooltip />
-                    <Bar dataKey="qty" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <CardContent className="space-y-2 text-xs">
+                {topMaterials.slice(0, 5).map((m) => (
+                  <div
+                    key={m.rank}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="secondary"
+                        className="w-6 h-6 p-0 flex items-center justify-center text-[10px] font-bold"
+                      >
+                        {m.rank}
+                      </Badge>
+                      <span className="truncate max-w-32 sm:max-w-none">{m.material}</span>
+                    </div>
+                    <span className="font-medium">{m.qty.toFixed(2)}</span>
+                  </div>
+                ))}
               </CardContent>
             </Card>
-
-            <div className="grid grid-cols-1 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">
-                    Top Materials
-                  </CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    Most ordered materials by quantity
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-2 text-xs">
-                  {topMaterials.slice(0, 5).map((m) => (
-                    <div
-                      key={m.rank}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="secondary"
-                          className="w-6 h-6 p-0 flex items-center justify-center text-[10px] font-bold"
-                        >
-                          {m.rank}
-                        </Badge>
-                        <span className="truncate max-w-32">{m.material}</span>
-                      </div>
-                      <span className="font-medium">{m.qty.toFixed(2)}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">
-                    Top Vendors by Quantity
-                  </CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    Leading suppliers by total quantity
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-2 text-xs">
-                  {topVendors.slice(0, 5).map((v) => (
-                    <div
-                      key={v.rank}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="secondary"
-                          className="w-6 h-6 p-0 flex items-center justify-center text-[10px] font-bold"
-                        >
-                          {v.rank}
-                        </Badge>
-                        <span className="truncate max-w-32">
-                          {v.vendor.split(" ").slice(0, 2).join(" ")}
-                        </span>
-                      </div>
-                      <span className="font-medium">{v.qty.toFixed(2)}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
           </div>
+
+          <Card className="lg:hidden">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                Top Vendors
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Leading suppliers by order count
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={vendorBarData.slice(0, 5)} layout="horizontal">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" hide />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={80}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <Tooltip />
+                  <Bar dataKey="qty" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="hidden lg:block">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                Top Vendors
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Leading suppliers by order count
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={vendorBarData} layout="horizontal">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" hide />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={80}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <Tooltip />
+                  <Bar dataKey="qty" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:hidden">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                Top Vendors by Quantity
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Leading suppliers by total quantity
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-2 text-xs">
+              {topVendors.slice(0, 5).map((v) => (
+                <div
+                  key={v.rank}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="w-6 h-6 p-0 flex items-center justify-center text-[10px] font-bold"
+                    >
+                      {v.rank}
+                    </Badge>
+                    <span className="truncate max-w-32">
+                      {v.vendor.split(" ").slice(0, 2).join(" ")}
+                    </span>
+                  </div>
+                  <span className="font-medium">{v.qty.toFixed(2)}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* IN-TRANSIT TAB */}
@@ -748,26 +831,27 @@ export default function PurchaseDashboard() {
           </div>
 
           {/* Search */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <Input
               placeholder="Search by ERP, material, or party..."
               value={inTransitSearch}
               onChange={(e) => setInTransitSearch(e.target.value)}
-              className="max-w-sm"
+              className="flex-1 sm:max-w-sm"
             />
             <Button
               variant="outline"
               size="sm"
               onClick={() => exportToCSV(finalInTransitData, 'in-transit-data.csv')}
-              className="flex items-center gap-1"
+              className="flex items-center justify-center gap-1"
             >
               <Download className="h-3 w-3" />
-              Export CSV
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">Export</span>
             </Button>
           </div>
 
           <Card>
-            <CardContent className="p-0">
+            <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -812,7 +896,7 @@ export default function PurchaseDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {finalInTransitData.map((item) => (
+                  {finalInTransitData.map((item: any) => (
                     <TableRow key={item.erp}>
                       <TableCell className="font-medium text-xs">
                         {item.erp}
@@ -847,26 +931,27 @@ export default function PurchaseDashboard() {
           </div>
 
           {/* Search */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <Input
               placeholder="Search by ERP, material, or party..."
               value={receivedSearch}
               onChange={(e) => setReceivedSearch(e.target.value)}
-              className="max-w-sm"
+              className="flex-1 sm:max-w-sm"
             />
             <Button
               variant="outline"
               size="sm"
               onClick={() => exportToCSV(finalReceivedData, 'received-data.csv')}
-              className="flex items-center gap-1"
+              className="flex items-center justify-center gap-1"
             >
               <Download className="h-3 w-3" />
-              Export CSV
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">Export</span>
             </Button>
           </div>
 
           <Card>
-            <CardContent className="p-0">
+            <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -912,7 +997,7 @@ export default function PurchaseDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {finalReceivedData.map((item) => (
+                  {finalReceivedData.map((item: any) => (
                     <TableRow key={item.erp}>
                       <TableCell className="font-medium text-xs">
                         {item.erp}
@@ -1014,7 +1099,7 @@ export default function PurchaseDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {finalPendingData.map((item) => (
+                  {finalPendingData.map((item: any) => (
                     <TableRow key={item.erp}>
                       <TableCell className="font-medium text-xs">
                         {item.erp}
@@ -1052,6 +1137,276 @@ export default function PurchaseDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Debug - Remove after testing */}
+      {formsMenuOpen && <div className="fixed top-0 left-0 bg-red-500 text-white p-2 z-50">Modal State: OPEN</div>}
+
+      {/* Forms Menu Modal */}
+      <Dialog open={formsMenuOpen} onOpenChange={setFormsMenuOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Form Type</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Button
+              variant="outline"
+              className="h-20 flex items-center justify-start gap-4"
+              onClick={() => {
+                setFormsMenuOpen(false);
+                setItemFormOpen(true);
+              }}
+            >
+              <Package className="w-8 h-8 text-blue-600" />
+              <div className="text-left">
+                <div className="font-semibold">Item Form</div>
+                <div className="text-xs text-muted-foreground">Add new item details</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-20 flex items-center justify-start gap-4"
+              onClick={() => {
+                setFormsMenuOpen(false);
+                setVendorFormOpen(true);
+              }}
+            >
+              <Users className="w-8 h-8 text-green-600" />
+              <div className="text-left">
+                <div className="font-semibold">Vendor Form</div>
+                <div className="text-xs text-muted-foreground">Add new vendor details</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-20 flex items-center justify-start gap-4"
+              onClick={() => {
+                setFormsMenuOpen(false);
+                setTransporterFormOpen(true);
+              }}
+            >
+              <Truck className="w-8 h-8 text-orange-600" />
+              <div className="text-left">
+                <div className="font-semibold">Transporter Form</div>
+                <div className="text-xs text-muted-foreground">Add new transporter details</div>
+              </div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Item Form Modal */}
+      <Dialog open={itemFormOpen} onOpenChange={setItemFormOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Item</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            console.log("Item Form:", itemForm);
+            setItemFormOpen(false);
+            setItemForm({ category: "", itemName: "", uom: "" });
+          }}>
+            <div className="grid gap-4 py-4">
+              <div>
+                <Label htmlFor="category">Category *</Label>
+                <Input
+                  id="category"
+                  value={itemForm.category}
+                  onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })}
+                  required
+                  placeholder="e.g. Electronics, Hardware"
+                />
+              </div>
+              <div>
+                <Label htmlFor="itemName">Item Name *</Label>
+                <Input
+                  id="itemName"
+                  value={itemForm.itemName}
+                  onChange={(e) => setItemForm({ ...itemForm, itemName: e.target.value })}
+                  required
+                  placeholder="e.g. Laptop, Screwdriver"
+                />
+              </div>
+              <div>
+                <Label htmlFor="uom">UOM (Unit of Measurement) *</Label>
+                <Select
+                  value={itemForm.uom}
+                  onValueChange={(v) => setItemForm({ ...itemForm, uom: v })}
+                >
+                  <SelectTrigger id="uom">
+                    <SelectValue placeholder="Select UOM" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pcs">Pieces (PCS)</SelectItem>
+                    <SelectItem value="kg">Kilogram (KG)</SelectItem>
+                    <SelectItem value="ltr">Liter (LTR)</SelectItem>
+                    <SelectItem value="mtr">Meter (MTR)</SelectItem>
+                    <SelectItem value="box">Box</SelectItem>
+                    <SelectItem value="set">Set</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setItemFormOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save Item</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Vendor Form Modal */}
+      <Dialog open={vendorFormOpen} onOpenChange={setVendorFormOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Vendor</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            console.log("Vendor Form:", vendorForm);
+            setVendorFormOpen(false);
+            setVendorForm({ vendorName: "", contactPerson: "", phone: "", email: "", address: "" });
+          }}>
+            <div className="grid gap-4 py-4">
+              <div>
+                <Label htmlFor="vendorName">Vendor Name *</Label>
+                <Input
+                  id="vendorName"
+                  value={vendorForm.vendorName}
+                  onChange={(e) => setVendorForm({ ...vendorForm, vendorName: e.target.value })}
+                  required
+                  placeholder="e.g. ABC Suppliers"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="contactPerson">Contact Person *</Label>
+                  <Input
+                    id="contactPerson"
+                    value={vendorForm.contactPerson}
+                    onChange={(e) => setVendorForm({ ...vendorForm, contactPerson: e.target.value })}
+                    required
+                    placeholder="e.g. John Doe"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone *</Label>
+                  <Input
+                    id="phone"
+                    value={vendorForm.phone}
+                    onChange={(e) => setVendorForm({ ...vendorForm, phone: e.target.value })}
+                    required
+                    placeholder="e.g. 9876543210"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={vendorForm.email}
+                  onChange={(e) => setVendorForm({ ...vendorForm, email: e.target.value })}
+                  placeholder="e.g. vendor@example.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="address">Address *</Label>
+                <textarea
+                  id="address"
+                  value={vendorForm.address}
+                  onChange={(e) => setVendorForm({ ...vendorForm, address: e.target.value })}
+                  required
+                  rows={3}
+                  className="w-full px-3 py-2 border rounded resize-none"
+                  placeholder="Enter complete address"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setVendorFormOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save Vendor</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transporter Form Modal */}
+      <Dialog open={transporterFormOpen} onOpenChange={setTransporterFormOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Transporter</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            console.log("Transporter Form:", transporterForm);
+            setTransporterFormOpen(false);
+            setTransporterForm({ transporterName: "", contactPerson: "", phone: "", vehicleType: "" });
+          }}>
+            <div className="grid gap-4 py-4">
+              <div>
+                <Label htmlFor="transporterName">Transporter Name *</Label>
+                <Input
+                  id="transporterName"
+                  value={transporterForm.transporterName}
+                  onChange={(e) => setTransporterForm({ ...transporterForm, transporterName: e.target.value })}
+                  required
+                  placeholder="e.g. Fast Logistics"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="transporterContact">Contact Person *</Label>
+                  <Input
+                    id="transporterContact"
+                    value={transporterForm.contactPerson}
+                    onChange={(e) => setTransporterForm({ ...transporterForm, contactPerson: e.target.value })}
+                    required
+                    placeholder="e.g. Jane Smith"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="transporterPhone">Phone *</Label>
+                  <Input
+                    id="transporterPhone"
+                    value={transporterForm.phone}
+                    onChange={(e) => setTransporterForm({ ...transporterForm, phone: e.target.value })}
+                    required
+                    placeholder="e.g. 9876543210"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="vehicleType">Vehicle Type *</Label>
+                <Select
+                  value={transporterForm.vehicleType}
+                  onValueChange={(v) => setTransporterForm({ ...transporterForm, vehicleType: v })}
+                >
+                  <SelectTrigger id="vehicleType">
+                    <SelectValue placeholder="Select Vehicle Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="truck">Truck</SelectItem>
+                    <SelectItem value="van">Van</SelectItem>
+                    <SelectItem value="trailer">Trailer</SelectItem>
+                    <SelectItem value="container">Container</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setTransporterFormOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save Transporter</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
