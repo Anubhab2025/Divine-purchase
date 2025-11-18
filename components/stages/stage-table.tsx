@@ -25,6 +25,7 @@ interface StageTableProps {
 
 export function StageTable({
   title,
+  stage,
   pending,
   history,
   onOpenForm,
@@ -32,7 +33,30 @@ export function StageTable({
   columns,
   showPending = true,
 }: StageTableProps) {
-  // Mobile card component for records
+  // Get timestamp when THIS stage was completed
+  const getStageTimestamp = (record: WorkflowRecord) => {
+    try {
+      // Try to find a history entry for this specific stage
+      const entry = record.history.find((h) => h.stage === stage);
+
+      // Use the entry's date if available, otherwise fall back to record's creation date
+      const timestamp = entry?.date || record.createdAt;
+
+      return new Date(timestamp).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return "—";
+    }
+  };
+
+  // Mobile Card (also shows Timestamp first)
   const RecordCard = ({
     record,
     isPending = false,
@@ -72,6 +96,18 @@ export function StageTable({
         </div>
 
         <div className="grid grid-cols-1 gap-2 text-sm">
+          {/* Timestamp first in mobile too */}
+          {!isPending && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground font-medium">
+                Timestamp:
+              </span>
+              <span className="text-right font-medium text-green-700">
+                {getStageTimestamp(record)}
+              </span>
+            </div>
+          )}
+
           {columns.map((col) => (
             <div key={col.key} className="flex justify-between">
               <span className="text-muted-foreground font-medium">
@@ -93,7 +129,7 @@ export function StageTable({
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header Section */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h2 className="text-2xl md:text-3xl font-bold text-foreground">
           {title}
@@ -122,7 +158,7 @@ export function StageTable({
                 </div>
               ) : (
                 <>
-                  {/* Mobile: Cards */}
+                  {/* Mobile */}
                   <div className="block md:hidden space-y-3">
                     {pending.map((record) => (
                       <RecordCard
@@ -135,7 +171,7 @@ export function StageTable({
                     ))}
                   </div>
 
-                  {/* Desktop: Table */}
+                  {/* Desktop */}
                   <div className="hidden md:block overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -149,12 +185,11 @@ export function StageTable({
                           <TableHead className="w-[100px]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
-
                       <TableBody>
                         {pending.map((record) => (
                           <TableRow
                             key={record.id}
-                            className="hover:bg-muted/50 transition-colors"
+                            className="hover:bg-muted/50"
                           >
                             <TableCell className="font-mono text-xs">
                               {record.id}
@@ -205,7 +240,7 @@ export function StageTable({
               </div>
             ) : (
               <>
-                {/* Mobile: Cards */}
+                {/* Mobile */}
                 <div className="block md:hidden space-y-3">
                   {history.map((record) => (
                     <RecordCard
@@ -218,11 +253,15 @@ export function StageTable({
                   ))}
                 </div>
 
-                {/* Desktop: Table */}
+                {/* Desktop Table */}
                 <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        {/* TIMESTAMP FIRST COLUMN */}
+                        <TableHead className="min-w-[180px] font-bold text-green-800">
+                          Timestamp
+                        </TableHead>
                         <TableHead className="w-[120px]">Record ID</TableHead>
                         {columns.map((col) => (
                           <TableHead key={col.key} className="min-w-[120px]">
@@ -237,11 +276,17 @@ export function StageTable({
                       {history.map((record) => (
                         <TableRow
                           key={record.id}
-                          className="opacity-90 hover:opacity-100 transition-opacity"
+                          className="hover:bg-green-50 transition-colors"
                         >
+                          {/* TIMESTAMP CELL FIRST */}
+                          <TableCell className="font-medium text-green-700 whitespace-nowrap">
+                            {getStageTimestamp(record)}
+                          </TableCell>
+
                           <TableCell className="font-mono text-xs">
                             {record.id}
                           </TableCell>
+
                           {columns.map((col) => (
                             <TableCell key={col.key} className="text-sm">
                               {col.key === "deliveryDate"
@@ -253,14 +298,9 @@ export function StageTable({
                                 : String(record.data[col.key] || "-")}
                             </TableCell>
                           ))}
-                          <TableCell
-                            className={`font-medium ${
-                              record.status === "completed"
-                                ? "text-green-600"
-                                : "text-yellow-600"
-                            }`}
-                          >
-                            {record.status}
+
+                          <TableCell className="font-medium text-green-600">
+                            Completed
                           </TableCell>
                         </TableRow>
                       ))}

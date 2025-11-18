@@ -109,7 +109,12 @@ export default function Stage1() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.createdBy && formData.warehouseLocation && formData.leadTime && formData.items.length > 0) {
+    if (
+      formData.createdBy &&
+      formData.warehouseLocation &&
+      formData.leadTime &&
+      formData.items.length > 0
+    ) {
       formData.items.forEach((item, index) => {
         const indentNumber = `IN-${indentCounter
           .toString()
@@ -124,7 +129,12 @@ export default function Stage1() {
         moveToNextStage(newRecord.id);
       });
       setIndentCounter((prev) => prev + 1);
-      setFormData({ createdBy: "", warehouseLocation: "", leadTime: "", items: [] });
+      setFormData({
+        createdBy: "",
+        warehouseLocation: "",
+        leadTime: "",
+        items: [],
+      });
       setOpen(false);
     }
   };
@@ -134,10 +144,7 @@ export default function Stage1() {
     if (
       itemForm.items.every(
         (item) =>
-          item.category &&
-          item.itemName &&
-          item.quantity &&
-          item.deliveryDate
+          item.category && item.itemName && item.quantity && item.deliveryDate
       )
     ) {
       setFormData((prev) => ({
@@ -241,7 +248,9 @@ export default function Stage1() {
                 <Label>Quotation</Label>
                 <Input
                   value={orderForm.quotation}
-                  onChange={(e) => handleOrderChange("quotation", e.target.value)}
+                  onChange={(e) =>
+                    handleOrderChange("quotation", e.target.value)
+                  }
                   placeholder="e.g. QT-2025-045"
                 />
               </div>
@@ -250,7 +259,9 @@ export default function Stage1() {
                 <Label>Company Name</Label>
                 <Input
                   value={orderForm.companyName}
-                  onChange={(e) => handleOrderChange("companyName", e.target.value)}
+                  onChange={(e) =>
+                    handleOrderChange("companyName", e.target.value)
+                  }
                   placeholder="e.g. TechCorp Solutions"
                 />
               </div>
@@ -259,7 +270,9 @@ export default function Stage1() {
                 <Label>Total Order</Label>
                 <Input
                   value={orderForm.totalOrder}
-                  onChange={(e) => handleOrderChange("totalOrder", e.target.value)}
+                  onChange={(e) =>
+                    handleOrderChange("totalOrder", e.target.value)
+                  }
                   placeholder="e.g. ₹1,25,000"
                 />
               </div>
@@ -269,7 +282,9 @@ export default function Stage1() {
                 <Input
                   type="number"
                   value={orderForm.quantity}
-                  onChange={(e) => handleOrderChange("quantity", e.target.value)}
+                  onChange={(e) =>
+                    handleOrderChange("quantity", e.target.value)
+                  }
                   placeholder="e.g. 15"
                 />
               </div>
@@ -368,7 +383,11 @@ export default function Stage1() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>Items</Label>
-                  <Button type="button" onClick={() => setAddItemOpen(true)} size="sm">
+                  <Button
+                    type="button"
+                    onClick={() => setAddItemOpen(true)}
+                    size="sm"
+                  >
                     Add Item
                   </Button>
                 </div>
@@ -400,7 +419,8 @@ export default function Stage1() {
                             </div>
                             <div className="col-span-2">
                               <span>
-                                Delivery: {new Date(
+                                Delivery:{" "}
+                                {new Date(
                                   item.deliveryDate
                                 ).toLocaleDateString()}
                               </span>
@@ -413,7 +433,9 @@ export default function Stage1() {
                             onClick={() => {
                               setFormData({
                                 ...formData,
-                                items: formData.items.filter((_, i) => i !== index),
+                                items: formData.items.filter(
+                                  (_, i) => i !== index
+                                ),
                               });
                             }}
                           >
@@ -439,7 +461,12 @@ export default function Stage1() {
             </Button>
             <Button
               type="submit"
-              disabled={!formData.createdBy || !formData.warehouseLocation || !formData.leadTime || formData.items.length === 0}
+              disabled={
+                !formData.createdBy ||
+                !formData.warehouseLocation ||
+                !formData.leadTime ||
+                formData.items.length === 0
+              }
               onClick={handleSubmit}
               className="w-full sm:w-auto"
             >
