@@ -30,7 +30,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Upload, X, Shield, ShieldCheck, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import {
+  FileText,
+  Upload,
+  X,
+  Shield,
+  ShieldCheck,
+  CheckCircle2,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -68,7 +77,9 @@ export default function Stage6() {
   const [bulkFormData, setBulkFormData] = useState<RecordLifting[]>([]);
   const [liftCounter, setLiftCounter] = useState(1);
 
-  const pending = records.filter((r) => r.stage === 6 && r.status === "pending");
+  const pending = records.filter(
+    (r) => r.stage === 6 && r.status === "pending"
+  );
   const completed = records.filter((r) => r.history.some((h) => h.stage === 6));
 
   const baseColumns = [
@@ -91,9 +102,16 @@ export default function Stage6() {
   ];
 
   const transporters = [
-    "ABC Logistics", "XYZ Transports", "Fastway Couriers", "SafeHaul Pvt Ltd",
-    "Metro Movers", "Speedy Freight", "National Carriers", "BlueDart Logistics",
-    "DTDC Express", "VRL Logistics",
+    "ABC Logistics",
+    "XYZ Transports",
+    "Fastway Couriers",
+    "SafeHaul Pvt Ltd",
+    "Metro Movers",
+    "Speedy Freight",
+    "National Carriers",
+    "BlueDart Logistics",
+    "DTDC Express",
+    "VRL Logistics",
   ];
 
   useEffect(() => {
@@ -170,7 +188,12 @@ export default function Stage6() {
     });
   };
 
-  const updateLiftingEntry = (recordIndex: number, liftIndex: number, field: keyof LiftingEntry, value: any) => {
+  const updateLiftingEntry = (
+    recordIndex: number,
+    liftIndex: number,
+    field: keyof LiftingEntry,
+    value: any
+  ) => {
     setBulkFormData((prev) => {
       const updated = [...prev];
       updated[recordIndex].liftingData[liftIndex] = {
@@ -183,7 +206,7 @@ export default function Stage6() {
 
   const handleBulkSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // First, update all records with their data
     bulkFormData.forEach((item) => {
       const finalData = {
@@ -194,7 +217,7 @@ export default function Stage6() {
       };
       updateRecord(item.recordId, finalData);
     });
-    
+
     // Then, move records to next stage (this will save the updated data to history)
     setTimeout(() => {
       bulkFormData.forEach((item) => {
@@ -255,7 +278,9 @@ export default function Stage6() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold">Stage 6: Vendor Follow-Up</h2>
-            <p className="text-gray-600 mt-1">Track dispatch and material lift status</p>
+            <p className="text-gray-600 mt-1">
+              Track dispatch and material lift status
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <Label className="text-sm font-medium">Show Columns:</Label>
@@ -271,21 +296,27 @@ export default function Stage6() {
                     <Checkbox
                       checked={selectedColumns.length === baseColumns.length}
                       onCheckedChange={(c) => {
-                        if (c) setSelectedColumns(baseColumns.map((col) => col.key));
+                        if (c)
+                          setSelectedColumns(baseColumns.map((col) => col.key));
                         else setSelectedColumns([]);
                       }}
                     />
                     <Label className="text-sm font-medium">All Columns</Label>
                   </div>
                   {baseColumns.map((col) => (
-                    <div key={col.key} className="flex items-center space-x-2 py-1">
+                    <div
+                      key={col.key}
+                      className="flex items-center space-x-2 py-1"
+                    >
                       <Checkbox
                         checked={selectedColumns.includes(col.key)}
                         onCheckedChange={(checked) => {
                           if (checked) {
                             setSelectedColumns((prev) => [...prev, col.key]);
                           } else {
-                            setSelectedColumns((prev) => prev.filter((c) => c !== col.key));
+                            setSelectedColumns((prev) =>
+                              prev.filter((c) => c !== col.key)
+                            );
                           }
                         }}
                       />
@@ -302,7 +333,9 @@ export default function Stage6() {
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
-          <TabsTrigger value="history">History ({completed.length})</TabsTrigger>
+          <TabsTrigger value="history">
+            History ({completed.length})
+          </TabsTrigger>
         </TabsList>
 
         {/* PENDING */}
@@ -318,7 +351,10 @@ export default function Stage6() {
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox
-                        checked={selectedRecords.length === pending.length && pending.length > 0}
+                        checked={
+                          selectedRecords.length === pending.length &&
+                          pending.length > 0
+                        }
                         onCheckedChange={selectAll}
                       />
                     </TableHead>
@@ -355,15 +391,22 @@ export default function Stage6() {
                         {baseColumns
                           .filter((c) => selectedColumns.includes(c.key))
                           .map((col) => (
-                            <TableCell key={col.key}>{record.data[col.key] || "-"}</TableCell>
+                            <TableCell key={col.key}>
+                              {record.data[col.key] || "-"}
+                            </TableCell>
                           ))}
                         <TableCell className="font-medium">{v.name}</TableCell>
                         <TableCell>₹{v.rate || "-"}</TableCell>
                         <TableCell>
-                          {paymentTermsList.find((t) => t.value === v.terms)?.label || v.terms || "-"}
+                          {paymentTermsList.find((t) => t.value === v.terms)
+                            ?.label ||
+                            v.terms ||
+                            "-"}
                         </TableCell>
                         <TableCell>
-                          {v.delivery ? new Date(v.delivery).toLocaleDateString("en-IN") : "-"}
+                          {v.delivery
+                            ? new Date(v.delivery).toLocaleDateString("en-IN")
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           {v.warrantyType ? (
@@ -373,7 +416,9 @@ export default function Stage6() {
                               ) : (
                                 <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
                               )}
-                              <span className="capitalize">{v.warrantyType}</span>
+                              <span className="capitalize">
+                                {v.warrantyType}
+                              </span>
                             </div>
                           ) : (
                             "-"
@@ -383,21 +428,27 @@ export default function Stage6() {
                           {v.attachment ? (
                             <div className="flex items-center gap-1 text-blue-600 text-xs">
                               <FileText className="w-3.5 h-3.5" />
-                              <span className="truncate max-w-20">{v.attachment.name}</span>
+                              <span className="truncate max-w-20">
+                                {v.attachment.name}
+                              </span>
                             </div>
                           ) : (
                             "-"
                           )}
                         </TableCell>
                         <TableCell>{v.approvedBy}</TableCell>
-                        <TableCell className="font-mono">{v.poNumber}</TableCell>
+                        <TableCell className="font-mono">
+                          {v.poNumber}
+                        </TableCell>
                         <TableCell>₹{v.basicValue}</TableCell>
                         <TableCell>₹{v.totalWithTax}</TableCell>
                         <TableCell>
                           {v.poCopy ? (
                             <div className="flex items-center gap-1 text-green-600 text-xs">
                               <FileText className="w-3.5 h-3.5" />
-                              <span className="truncate max-w-20">{v.poCopy.name}</span>
+                              <span className="truncate max-w-20">
+                                {v.poCopy.name}
+                              </span>
                             </div>
                           ) : (
                             "-"
@@ -423,7 +474,8 @@ export default function Stage6() {
               {selectedRecords.length > 0 && (
                 <div className="p-4 bg-gray-50 border-t flex items-center justify-between">
                   <p className="text-sm font-medium">
-                    {selectedRecords.length} item{selectedRecords.length > 1 ? "s" : ""} selected
+                    {selectedRecords.length} item
+                    {selectedRecords.length > 1 ? "s" : ""} selected
                   </p>
                   <Button onClick={handleBulkOpen} size="sm">
                     Follow-Up Selected
@@ -472,19 +524,25 @@ export default function Stage6() {
                     <TableHead>Advance Amt</TableHead>
                     <TableHead>Payment Date</TableHead>
                     <TableHead>Bilty Copy</TableHead>
-            
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {completed.map((record) => {
                     // Get data from stage 6 history entry
-                    const stage6History = record.history.find((h) => h.stage === 6);
-                    const historyData = stage6History ? stage6History.data : record.data;
+                    const stage6History = record.history.find(
+                      (h) => h.stage === 6
+                    );
+                    const historyData = stage6History
+                      ? stage6History.data
+                      : record.data;
                     const v = getVendorData({ ...record, data: historyData });
                     const lifts = historyData.liftingData || [];
                     return lifts.length > 0 ? (
                       lifts.map((lift: LiftingEntry, idx: number) => (
-                        <TableRow key={`${record.id}-${idx}`} className="bg-green-50">
+                        <TableRow
+                          key={`${record.id}-${idx}`}
+                          className="bg-green-50"
+                        >
                           {idx === 0 &&
                             baseColumns
                               .filter((c) => selectedColumns.includes(c.key))
@@ -495,16 +553,29 @@ export default function Stage6() {
                               ))}
                           {idx === 0 && (
                             <>
-                              <TableCell rowSpan={lifts.length} className="font-medium">
+                              <TableCell
+                                rowSpan={lifts.length}
+                                className="font-medium"
+                              >
                                 <CheckCircle2 className="w-4 h-4 text-green-600 inline mr-1" />
                                 {v.name}
                               </TableCell>
-                              <TableCell rowSpan={lifts.length}>₹{v.rate || "-"}</TableCell>
                               <TableCell rowSpan={lifts.length}>
-                                {paymentTermsList.find((t) => t.value === v.terms)?.label || v.terms || "-"}
+                                ₹{v.rate || "-"}
                               </TableCell>
                               <TableCell rowSpan={lifts.length}>
-                                {v.delivery ? new Date(v.delivery).toLocaleDateString("en-IN") : "-"}
+                                {paymentTermsList.find(
+                                  (t) => t.value === v.terms
+                                )?.label ||
+                                  v.terms ||
+                                  "-"}
+                              </TableCell>
+                              <TableCell rowSpan={lifts.length}>
+                                {v.delivery
+                                  ? new Date(v.delivery).toLocaleDateString(
+                                      "en-IN"
+                                    )
+                                  : "-"}
                               </TableCell>
                               <TableCell rowSpan={lifts.length}>
                                 {v.warrantyType ? (
@@ -514,7 +585,9 @@ export default function Stage6() {
                                     ) : (
                                       <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
                                     )}
-                                    <span className="capitalize">{v.warrantyType}</span>
+                                    <span className="capitalize">
+                                      {v.warrantyType}
+                                    </span>
                                   </div>
                                 ) : (
                                   "-"
@@ -524,23 +597,36 @@ export default function Stage6() {
                                 {v.attachment ? (
                                   <div className="flex items-center gap-1 text-blue-600 text-xs">
                                     <FileText className="w-3.5 h-3.5" />
-                                    <span className="truncate max-w-20">{v.attachment.name}</span>
+                                    <span className="truncate max-w-20">
+                                      {v.attachment.name}
+                                    </span>
                                   </div>
                                 ) : (
                                   "-"
                                 )}
                               </TableCell>
-                              <TableCell rowSpan={lifts.length}>{v.approvedBy}</TableCell>
-                              <TableCell rowSpan={lifts.length} className="font-mono">
+                              <TableCell rowSpan={lifts.length}>
+                                {v.approvedBy}
+                              </TableCell>
+                              <TableCell
+                                rowSpan={lifts.length}
+                                className="font-mono"
+                              >
                                 {v.poNumber}
                               </TableCell>
-                              <TableCell rowSpan={lifts.length}>₹{v.basicValue}</TableCell>
-                              <TableCell rowSpan={lifts.length}>₹{v.totalWithTax}</TableCell>
+                              <TableCell rowSpan={lifts.length}>
+                                ₹{v.basicValue}
+                              </TableCell>
+                              <TableCell rowSpan={lifts.length}>
+                                ₹{v.totalWithTax}
+                              </TableCell>
                               <TableCell rowSpan={lifts.length}>
                                 {v.poCopy ? (
                                   <div className="flex items-center gap-1 text-green-600 text-xs">
                                     <FileText className="w-3.5 h-3.5" />
-                                    <span className="truncate max-w-20">{v.poCopy.name}</span>
+                                    <span className="truncate max-w-20">
+                                      {v.poCopy.name}
+                                    </span>
                                   </div>
                                 ) : (
                                   "-"
@@ -548,23 +634,37 @@ export default function Stage6() {
                               </TableCell>
                             </>
                           )}
-                          <TableCell className="font-mono">{lift.liftNumber}</TableCell>
+                          <TableCell className="font-mono">
+                            {lift.liftNumber}
+                          </TableCell>
                           <TableCell>{lift.liftingQty}</TableCell>
                           <TableCell>{lift.transporterName}</TableCell>
                           <TableCell>{lift.vehicleNumber || "-"}</TableCell>
                           <TableCell>{lift.contactNumber || "-"}</TableCell>
                           <TableCell>{lift.lrNumber}</TableCell>
                           <TableCell>
-                            {lift.dispatchDate ? new Date(lift.dispatchDate).toLocaleDateString("en-IN") : "-"}
+                            {lift.dispatchDate
+                              ? new Date(lift.dispatchDate).toLocaleDateString(
+                                  "en-IN"
+                                )
+                              : "-"}
                           </TableCell>
                           <TableCell>₹{lift.freightAmount}</TableCell>
                           <TableCell>₹{lift.advanceAmount || "-"}</TableCell>
-                          <TableCell>{lift.paymentDate ? new Date(lift.paymentDate).toLocaleDateString("en-IN") : "-"}</TableCell>
+                          <TableCell>
+                            {lift.paymentDate
+                              ? new Date(lift.paymentDate).toLocaleDateString(
+                                  "en-IN"
+                                )
+                              : "-"}
+                          </TableCell>
                           <TableCell>
                             {lift.biltyCopy ? (
                               <div className="flex items-center gap-1 text-green-600 text-xs">
                                 <FileText className="w-3.5 h-3.5" />
-                                <span className="truncate max-w-20">{lift.biltyCopy.name}</span>
+                                <span className="truncate max-w-20">
+                                  {lift.biltyCopy.name}
+                                </span>
                               </div>
                             ) : (
                               "-"
@@ -577,15 +677,22 @@ export default function Stage6() {
                         {baseColumns
                           .filter((c) => selectedColumns.includes(c.key))
                           .map((col) => (
-                            <TableCell key={col.key}>{historyData[col.key] || "-"}</TableCell>
+                            <TableCell key={col.key}>
+                              {historyData[col.key] || "-"}
+                            </TableCell>
                           ))}
                         <TableCell className="font-medium">{v.name}</TableCell>
                         <TableCell>₹{v.rate || "-"}</TableCell>
                         <TableCell>
-                          {paymentTermsList.find((t) => t.value === v.terms)?.label || v.terms || "-"}
+                          {paymentTermsList.find((t) => t.value === v.terms)
+                            ?.label ||
+                            v.terms ||
+                            "-"}
                         </TableCell>
                         <TableCell>
-                          {v.delivery ? new Date(v.delivery).toLocaleDateString("en-IN") : "-"}
+                          {v.delivery
+                            ? new Date(v.delivery).toLocaleDateString("en-IN")
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           {v.warrantyType ? (
@@ -595,7 +702,9 @@ export default function Stage6() {
                               ) : (
                                 <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
                               )}
-                              <span className="capitalize">{v.warrantyType}</span>
+                              <span className="capitalize">
+                                {v.warrantyType}
+                              </span>
                             </div>
                           ) : (
                             "-"
@@ -605,27 +714,36 @@ export default function Stage6() {
                           {v.attachment ? (
                             <div className="flex items-center gap-1 text-blue-600 text-xs">
                               <FileText className="w-3.5 h-3.5" />
-                              <span className="truncate max-w-20">{v.attachment.name}</span>
+                              <span className="truncate max-w-20">
+                                {v.attachment.name}
+                              </span>
                             </div>
                           ) : (
                             "-"
                           )}
                         </TableCell>
                         <TableCell>{v.approvedBy}</TableCell>
-                        <TableCell className="font-mono">{v.poNumber}</TableCell>
+                        <TableCell className="font-mono">
+                          {v.poNumber}
+                        </TableCell>
                         <TableCell>₹{v.basicValue}</TableCell>
                         <TableCell>₹{v.totalWithTax}</TableCell>
                         <TableCell>
                           {v.poCopy ? (
                             <div className="flex items-center gap-1 text-green-600 text-xs">
                               <FileText className="w-3.5 h-3.5" />
-                              <span className="truncate max-w-20">{v.poCopy.name}</span>
+                              <span className="truncate max-w-20">
+                                {v.poCopy.name}
+                              </span>
                             </div>
                           ) : (
                             "-"
                           )}
                         </TableCell>
-                        <TableCell colSpan={8} className="text-center text-yellow-700">
+                        <TableCell
+                          colSpan={8}
+                          className="text-center text-yellow-700"
+                        >
                           Follow-Up Scheduled
                         </TableCell>
                       </TableRow>
@@ -648,24 +766,35 @@ export default function Stage6() {
             </p>
           </DialogHeader>
 
-          <form onSubmit={handleBulkSubmit} className="flex-1 overflow-y-auto space-y-8 pr-2">
+          <form
+            onSubmit={handleBulkSubmit}
+            className="flex-1 overflow-y-auto space-y-8 pr-2"
+          >
             {bulkFormData.map((item, recordIdx) => {
               const record = records.find((r) => r.id === item.recordId)!;
               const v = getVendorData(record);
               return (
-                <div key={item.recordId} className="border rounded-lg p-6 bg-white shadow-sm">
+                <div
+                  key={item.recordId}
+                  className="border rounded-lg p-6 bg-white shadow-sm"
+                >
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h4 className="font-semibold text-lg">Indent #{record.data.indentNumber}</h4>
+                      <h4 className="font-semibold text-lg">
+                        Indent #{record.data.indentNumber}
+                      </h4>
                       <p className="text-sm text-gray-600">
-                        {record.data.itemName} | Qty: {record.data.quantity} | Vendor: {v.name}
+                        {record.data.itemName} | Qty: {record.data.quantity} |
+                        Vendor: {v.name}
                       </p>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Status <span className="text-red-500">*</span></Label>
+                      <Label>
+                        Status <span className="text-red-500">*</span>
+                      </Label>
                       <Select
                         value={item.status}
                         onValueChange={(val) => {
@@ -674,9 +803,11 @@ export default function Stage6() {
                             updated[recordIdx] = {
                               ...updated[recordIdx],
                               status: val,
-                              followUpDate: val === "follow-up" ? item.followUpDate : "",
+                              followUpDate:
+                                val === "follow-up" ? item.followUpDate : "",
                               remarks: val === "follow-up" ? item.remarks : "",
-                              liftingData: val === "lift-material" ? item.liftingData : [],
+                              liftingData:
+                                val === "lift-material" ? item.liftingData : [],
                             };
                             return updated;
                           });
@@ -687,22 +818,51 @@ export default function Stage6() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="follow-up">Follow-Up</SelectItem>
-                          <SelectItem value="lift-material">Lift The Material</SelectItem>
+                          <SelectItem value="lift-material">
+                            Lift The Material
+                          </SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>PO Number</Label>
+                      <Input
+                        value={v.poNumber}
+                        onChange={(e) => {
+                          // Update the PO number in the record's data
+                          const updatedRecords = [...records];
+                          const recordIndex = updatedRecords.findIndex(
+                            (r) => r.id === item.recordId
+                          );
+                          if (recordIndex > -1) {
+                            updatedRecords[recordIndex].data.poNumber =
+                              e.target.value;
+                            // Update the record in the context
+                            updateRecord(item.recordId, {
+                              ...updatedRecords[recordIndex].data,
+                            });
+                          }
+                        }}
+                        placeholder="Enter PO number"
+                      />
                     </div>
 
                     {item.status === "follow-up" && (
                       <div className="grid grid-cols-2 gap-4 p-4 bg-yellow-50 rounded">
                         <div>
-                          <Label>Next Follow-up Date <span className="text-red-500">*</span></Label>
+                          <Label>
+                            Next Follow-up Date{" "}
+                            <span className="text-red-500">*</span>
+                          </Label>
                           <Input
                             type="date"
                             value={item.followUpDate}
                             onChange={(e) =>
                               setBulkFormData((prev) => {
                                 const updated = [...prev];
-                                updated[recordIdx].followUpDate = e.target.value;
+                                updated[recordIdx].followUpDate =
+                                  e.target.value;
                                 return updated;
                               })
                             }
@@ -710,7 +870,9 @@ export default function Stage6() {
                           />
                         </div>
                         <div className="col-span-2">
-                          <Label>Remarks <span className="text-red-500">*</span></Label>
+                          <Label>
+                            Remarks <span className="text-red-500">*</span>
+                          </Label>
                           <Textarea
                             value={item.remarks}
                             onChange={(e) =>
@@ -730,25 +892,38 @@ export default function Stage6() {
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
                           <h5 className="font-medium">Lifting Entries</h5>
-                          <Button type="button" size="sm" onClick={() => addLiftingEntry(recordIdx)}>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => addLiftingEntry(recordIdx)}
+                          >
                             <Plus className="w-4 h-4 mr-2" />
                             Add Lifting
                           </Button>
                         </div>
 
                         {item.liftingData.length === 0 ? (
-                          <p className="text-sm text-gray-500">No lifting entries.</p>
+                          <p className="text-sm text-gray-500">
+                            No lifting entries.
+                          </p>
                         ) : (
                           item.liftingData.map((lift, liftIdx) => (
-                            <div key={liftIdx} className="border rounded p-4 bg-green-50 relative">
+                            <div
+                              key={liftIdx}
+                              className="border rounded p-4 bg-green-50 relative"
+                            >
                               <button
                                 type="button"
-                                onClick={() => removeLiftingEntry(recordIdx, liftIdx)}
+                                onClick={() =>
+                                  removeLiftingEntry(recordIdx, liftIdx)
+                                }
                                 className="absolute top-2 right-2 text-red-600"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
-                              <div className="font-mono text-lg mb-3">{lift.liftNumber}</div>
+                              <div className="font-mono text-lg mb-3">
+                                {lift.liftNumber}
+                              </div>
                               <div className="grid grid-cols-2 gap-3 text-sm">
                                 <div>
                                   <Label>Lifting Qty *</Label>
@@ -756,7 +931,12 @@ export default function Stage6() {
                                     type="number"
                                     value={lift.liftingQty}
                                     onChange={(e) =>
-                                      updateLiftingEntry(recordIdx, liftIdx, "liftingQty", e.target.value)
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "liftingQty",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                   />
@@ -766,7 +946,12 @@ export default function Stage6() {
                                   <Select
                                     value={lift.transporterName}
                                     onValueChange={(val) =>
-                                      updateLiftingEntry(recordIdx, liftIdx, "transporterName", val)
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "transporterName",
+                                        val
+                                      )
                                     }
                                   >
                                     <SelectTrigger>
@@ -774,7 +959,9 @@ export default function Stage6() {
                                     </SelectTrigger>
                                     <SelectContent>
                                       {transporters.map((t) => (
-                                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                                        <SelectItem key={t} value={t}>
+                                          {t}
+                                        </SelectItem>
                                       ))}
                                     </SelectContent>
                                   </Select>
@@ -784,7 +971,12 @@ export default function Stage6() {
                                   <Input
                                     value={lift.vehicleNumber}
                                     onChange={(e) =>
-                                      updateLiftingEntry(recordIdx, liftIdx, "vehicleNumber", e.target.value.toUpperCase())
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "vehicleNumber",
+                                        e.target.value.toUpperCase()
+                                      )
                                     }
                                     required
                                   />
@@ -794,7 +986,12 @@ export default function Stage6() {
                                   <Input
                                     value={lift.contactNumber}
                                     onChange={(e) =>
-                                      updateLiftingEntry(recordIdx, liftIdx, "contactNumber", e.target.value)
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "contactNumber",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                   />
@@ -804,7 +1001,12 @@ export default function Stage6() {
                                   <Input
                                     value={lift.lrNumber}
                                     onChange={(e) =>
-                                      updateLiftingEntry(recordIdx, liftIdx, "lrNumber", e.target.value)
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "lrNumber",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                   />
@@ -815,7 +1017,12 @@ export default function Stage6() {
                                     type="date"
                                     value={lift.dispatchDate}
                                     onChange={(e) =>
-                                      updateLiftingEntry(recordIdx, liftIdx, "dispatchDate", e.target.value)
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "dispatchDate",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                   />
@@ -827,7 +1034,12 @@ export default function Stage6() {
                                     step="0.01"
                                     value={lift.freightAmount}
                                     onChange={(e) =>
-                                      updateLiftingEntry(recordIdx, liftIdx, "freightAmount", e.target.value)
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "freightAmount",
+                                        e.target.value
+                                      )
                                     }
                                     required
                                   />
@@ -839,7 +1051,12 @@ export default function Stage6() {
                                     step="0.01"
                                     value={lift.advanceAmount}
                                     onChange={(e) =>
-                                      updateLiftingEntry(recordIdx, liftIdx, "advanceAmount", e.target.value)
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "advanceAmount",
+                                        e.target.value
+                                      )
                                     }
                                   />
                                 </div>
@@ -849,9 +1066,40 @@ export default function Stage6() {
                                     type="date"
                                     value={lift.paymentDate}
                                     onChange={(e) =>
-                                      updateLiftingEntry(recordIdx, liftIdx, "paymentDate", e.target.value)
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "paymentDate",
+                                        e.target.value
+                                      )
                                     }
                                   />
+                                </div>
+                                <div className="col-span-2">
+                                  <Label>Payment Status</Label>
+                                  <Select
+                                    value={lift.paymentStatus || ""}
+                                    onValueChange={(val) =>
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "paymentStatus",
+                                        val
+                                      )
+                                    }
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select payment status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="to_pay">
+                                        To Pay
+                                      </SelectItem>
+                                      <SelectItem value="for_pay">
+                                        For Pay
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                                 <div className="col-span-2">
                                   <Label>Bilty Copy *</Label>
@@ -859,7 +1107,12 @@ export default function Stage6() {
                                     type="file"
                                     accept=".pdf,.jpg,.png"
                                     onChange={(e) =>
-                                      updateLiftingEntry(recordIdx, liftIdx, "biltyCopy", e.target.files?.[0] || null)
+                                      updateLiftingEntry(
+                                        recordIdx,
+                                        liftIdx,
+                                        "biltyCopy",
+                                        e.target.files?.[0] || null
+                                      )
                                     }
                                     className="hidden"
                                     id={`file-${recordIdx}-${liftIdx}`}

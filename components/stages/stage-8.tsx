@@ -3,7 +3,13 @@
 import type React from "react";
 import { useState } from "react";
 import { useWorkflow } from "@/lib/workflow-context";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,7 +43,7 @@ const QC_ENGINEERS = [
 
 export default function Stage8() {
   const { records = [], moveToNextStage, updateRecord } = useWorkflow() || {};
-  
+
   const [open, setOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"pending" | "history">("pending");
@@ -49,6 +55,7 @@ export default function Stage8() {
     rejectQty: "",
     returnStatus: "",
     qcRemarks: "",
+    rejectPhoto: null as File | null,
   });
 
   // Safe filtering
@@ -56,7 +63,9 @@ export default function Stage8() {
     (r: any) => r?.stage === 8 && r?.status === "pending"
   );
   const completed = (records || []).filter((r: any) =>
-    Array.isArray(r?.history) ? r.history.some((h: any) => h?.stage === 8) : false
+    Array.isArray(r?.history)
+      ? r.history.some((h: any) => h?.stage === 8)
+      : false
   );
 
   // Pending columns (without QC result fields)
@@ -108,13 +117,13 @@ export default function Stage8() {
     { key: "qcRemarks", label: "QC Remarks" },
   ];
 
-  const [selectedPendingColumns, setSelectedPendingColumns] = useState<string[]>(
-    pendingColumns.map((col) => col.key)
-  );
+  const [selectedPendingColumns, setSelectedPendingColumns] = useState<
+    string[]
+  >(pendingColumns.map((col) => col.key));
 
-  const [selectedHistoryColumns, setSelectedHistoryColumns] = useState<string[]>(
-    historyColumns.map((col) => col.key)
-  );
+  const [selectedHistoryColumns, setSelectedHistoryColumns] = useState<
+    string[]
+  >(historyColumns.map((col) => col.key));
 
   const handleOpenForm = (recordId: string) => {
     const today = new Date().toISOString().split("T")[0];
@@ -127,6 +136,7 @@ export default function Stage8() {
       rejectQty: "",
       returnStatus: "",
       qcRemarks: "",
+      rejectPhoto: null,
     });
     setOpen(true);
   };
@@ -140,9 +150,11 @@ export default function Stage8() {
       qcDate: formData.qcDate,
       qcStatus: formData.qcStatus,
       rejectQty: formData.qcStatus === "rejected" ? formData.rejectQty : "",
-      rejectRemarks: formData.qcStatus === "rejected" ? formData.rejectRemarks : "",
+      rejectRemarks:
+        formData.qcStatus === "rejected" ? formData.rejectRemarks : "",
       returnStatus: formData.returnStatus,
       qcRemarks: formData.qcRemarks,
+      rejectPhoto: formData.rejectPhoto,
     };
 
     updateRecord(selectedRecord, qcData);
@@ -158,6 +170,7 @@ export default function Stage8() {
       rejectQty: "",
       returnStatus: "",
       qcRemarks: "",
+      rejectPhoto: null,
     });
   };
 
@@ -167,19 +180,33 @@ export default function Stage8() {
     formData.qcStatus &&
     formData.returnStatus &&
     (formData.qcStatus === "approved" ||
-      (formData.qcStatus === "rejected" && formData.rejectQty && formData.rejectRemarks));
+      (formData.qcStatus === "rejected" &&
+        formData.rejectQty &&
+        formData.rejectRemarks));
 
   // Get vendor data
   const getVendorData = (record: any) => {
     const selectedId = record?.data?.selectedVendor || "vendor1";
     const idx = parseInt(selectedId.replace("vendor", ""), 10) || 1;
     return {
-      name: record?.data?.[`vendor${idx}Name`] || record?.data?.vendorName || "-",
-      rate: record?.data?.[`vendor${idx}Rate`] || record?.data?.ratePerQty || "-",
-      terms: record?.data?.[`vendor${idx}Terms`] || record?.data?.paymentTerms || "-",
-      delivery: record?.data?.[`vendor${idx}DeliveryDate`] || record?.data?.deliveryDate,
-      warrantyType: record?.data?.[`vendor${idx}WarrantyType`] || record?.data?.warrantyType || "-",
-      attachment: record?.data?.[`vendor${idx}Attachment`] || record?.data?.vendorAttachment,
+      name:
+        record?.data?.[`vendor${idx}Name`] || record?.data?.vendorName || "-",
+      rate:
+        record?.data?.[`vendor${idx}Rate`] || record?.data?.ratePerQty || "-",
+      terms:
+        record?.data?.[`vendor${idx}Terms`] ||
+        record?.data?.paymentTerms ||
+        "-",
+      delivery:
+        record?.data?.[`vendor${idx}DeliveryDate`] ||
+        record?.data?.deliveryDate,
+      warrantyType:
+        record?.data?.[`vendor${idx}WarrantyType`] ||
+        record?.data?.warrantyType ||
+        "-",
+      attachment:
+        record?.data?.[`vendor${idx}Attachment`] ||
+        record?.data?.vendorAttachment,
     };
   };
 
@@ -187,11 +214,12 @@ export default function Stage8() {
   const safeValue = (record: any, key: string, isHistory = false) => {
     try {
       const data = isHistory
-        ? record?.history?.find((h: any) => h?.stage === 8)?.data || record?.data
+        ? record?.history?.find((h: any) => h?.stage === 8)?.data ||
+          record?.data
         : record?.data;
 
       // Get lifting data
-      const lift = (data?.liftingData as any[] ?? [])[0] ?? {};
+      const lift = ((data?.liftingData as any[]) ?? [])[0] ?? {};
       const vendor = getVendorData({ data });
 
       // Handle lifting data fields
@@ -199,9 +227,14 @@ export default function Stage8() {
       if (key === "liftQty") return lift.liftingQty || "-";
       if (key === "transporter") return lift.transporterName || "-";
       if (key === "lrNumber") return lift.lrNumber || "-";
-      if (key === "freight") return lift.freightAmount ? `₹${lift.freightAmount}` : "-";
-      if (key === "advanceAmount") return lift.advanceAmount ? `₹${lift.advanceAmount}` : "-";
-      if (key === "paymentDate") return lift.paymentDate ? new Date(lift.paymentDate).toLocaleDateString("en-IN") : "-";
+      if (key === "freight")
+        return lift.freightAmount ? `₹${lift.freightAmount}` : "-";
+      if (key === "advanceAmount")
+        return lift.advanceAmount ? `₹${lift.advanceAmount}` : "-";
+      if (key === "paymentDate")
+        return lift.paymentDate
+          ? new Date(lift.paymentDate).toLocaleDateString("en-IN")
+          : "-";
       if (key === "biltyNumber") return lift.biltyCopy?.name || "-";
 
       // Handle vendor data fields
@@ -212,12 +245,16 @@ export default function Stage8() {
       if (key === "attachment") return vendor.attachment?.name || "-";
 
       // Handle warehouse
-      if (key === "warehouse") return data?.warehouseLocation || data?.warehouse || "-";
+      if (key === "warehouse")
+        return data?.warehouseLocation || data?.warehouse || "-";
 
       // Handle Stage 7 payment amounts
-      if (key === "hydraAmount") return data?.paymentAmountHydra ? `₹${data.paymentAmountHydra}` : "-";
-      if (key === "labourAmount") return data?.paymentAmountLabour ? `₹${data.paymentAmountLabour}` : "-";
-      if (key === "hemaliAmount") return data?.paymentAmountHemali ? `₹${data.paymentAmountHemali}` : "-";
+      if (key === "hydraAmount")
+        return data?.paymentAmountHydra ? `₹${data.paymentAmountHydra}` : "-";
+      if (key === "labourAmount")
+        return data?.paymentAmountLabour ? `₹${data.paymentAmountLabour}` : "-";
+      if (key === "hemaliAmount")
+        return data?.paymentAmountHemali ? `₹${data.paymentAmountHemali}` : "-";
 
       // Handle QC Required
       if (key === "qcRequired") return data?.qcRequirement || "-";
@@ -237,7 +274,11 @@ export default function Stage8() {
   };
 
   if (!records) {
-    return <div className="p-6 text-center text-red-600">Workflow context not loaded.</div>;
+    return (
+      <div className="p-6 text-center text-red-600">
+        Workflow context not loaded.
+      </div>
+    );
   }
 
   return (
@@ -247,17 +288,21 @@ export default function Stage8() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold">Stage 8: Quality Control</h2>
-            <p className="text-gray-600 mt-1">Inspect and approve/reject received materials</p>
+            <p className="text-gray-600 mt-1">
+              Inspect and approve/reject received materials
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <Label className="text-sm font-medium">Show Columns:</Label>
             <Select value="" onValueChange={() => {}}>
               <SelectTrigger className="w-64">
-                <SelectValue placeholder={
-                  activeTab === "pending" 
-                    ? `${selectedPendingColumns.length} selected` 
-                    : `${selectedHistoryColumns.length} selected`
-                } />
+                <SelectValue
+                  placeholder={
+                    activeTab === "pending"
+                      ? `${selectedPendingColumns.length} selected`
+                      : `${selectedHistoryColumns.length} selected`
+                  }
+                />
               </SelectTrigger>
               <SelectContent className="w-64 max-h-96 overflow-y-auto">
                 <div className="p-2">
@@ -265,21 +310,33 @@ export default function Stage8() {
                     <Checkbox
                       checked={
                         activeTab === "pending"
-                          ? selectedPendingColumns.length === pendingColumns.length
-                          : selectedHistoryColumns.length === historyColumns.length
+                          ? selectedPendingColumns.length ===
+                            pendingColumns.length
+                          : selectedHistoryColumns.length ===
+                            historyColumns.length
                       }
                       onCheckedChange={(checked) => {
                         if (activeTab === "pending") {
-                          setSelectedPendingColumns(checked ? pendingColumns.map(c => c.key) : []);
+                          setSelectedPendingColumns(
+                            checked ? pendingColumns.map((c) => c.key) : []
+                          );
                         } else {
-                          setSelectedHistoryColumns(checked ? historyColumns.map(c => c.key) : []);
+                          setSelectedHistoryColumns(
+                            checked ? historyColumns.map((c) => c.key) : []
+                          );
                         }
                       }}
                     />
                     <Label className="text-sm font-medium">All</Label>
                   </div>
-                  {(activeTab === "pending" ? pendingColumns : historyColumns).map((col) => (
-                    <div key={col.key} className="flex items-center space-x-2 py-1">
+                  {(activeTab === "pending"
+                    ? pendingColumns
+                    : historyColumns
+                  ).map((col) => (
+                    <div
+                      key={col.key}
+                      className="flex items-center space-x-2 py-1"
+                    >
                       <Checkbox
                         checked={
                           activeTab === "pending"
@@ -291,13 +348,17 @@ export default function Stage8() {
                             setSelectedPendingColumns(
                               checked
                                 ? [...selectedPendingColumns, col.key]
-                                : selectedPendingColumns.filter(c => c !== col.key)
+                                : selectedPendingColumns.filter(
+                                    (c) => c !== col.key
+                                  )
                             );
                           } else {
                             setSelectedHistoryColumns(
                               checked
                                 ? [...selectedHistoryColumns, col.key]
-                                : selectedHistoryColumns.filter(c => c !== col.key)
+                                : selectedHistoryColumns.filter(
+                                    (c) => c !== col.key
+                                  )
                             );
                           }
                         }}
@@ -315,7 +376,9 @@ export default function Stage8() {
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
-          <TabsTrigger value="history">History ({completed.length})</TabsTrigger>
+          <TabsTrigger value="history">
+            History ({completed.length})
+          </TabsTrigger>
         </TabsList>
 
         {/* Pending */}
@@ -330,11 +393,17 @@ export default function Stage8() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="sticky left-0 bg-white z-10">ID</TableHead>
-                    {pendingColumns.filter(c => selectedPendingColumns.includes(c.key)).map(col => (
-                      <TableHead key={col.key}>{col.label}</TableHead>
-                    ))}
-                    <TableHead className="sticky right-0 bg-white z-10">Actions</TableHead>
+                    <TableHead className="sticky left-0 bg-white z-10">
+                      ID
+                    </TableHead>
+                    {pendingColumns
+                      .filter((c) => selectedPendingColumns.includes(c.key))
+                      .map((col) => (
+                        <TableHead key={col.key}>{col.label}</TableHead>
+                      ))}
+                    <TableHead className="sticky right-0 bg-white z-10">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -343,11 +412,13 @@ export default function Stage8() {
                       <TableCell className="font-mono text-xs sticky left-0 bg-white z-10">
                         {record.id || "-"}
                       </TableCell>
-                      {pendingColumns.filter(c => selectedPendingColumns.includes(c.key)).map(col => (
-                        <TableCell key={col.key}>
-                          {safeValue(record, col.key)}
-                        </TableCell>
-                      ))}
+                      {pendingColumns
+                        .filter((c) => selectedPendingColumns.includes(c.key))
+                        .map((col) => (
+                          <TableCell key={col.key}>
+                            {safeValue(record, col.key)}
+                          </TableCell>
+                        ))}
                       <TableCell className="sticky right-0 bg-white z-10">
                         <Button
                           variant="outline"
@@ -376,10 +447,14 @@ export default function Stage8() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="sticky left-0 bg-white z-10">ID</TableHead>
-                    {historyColumns.filter(c => selectedHistoryColumns.includes(c.key)).map(col => (
-                      <TableHead key={col.key}>{col.label}</TableHead>
-                    ))}
+                    <TableHead className="sticky left-0 bg-white z-10">
+                      ID
+                    </TableHead>
+                    {historyColumns
+                      .filter((c) => selectedHistoryColumns.includes(c.key))
+                      .map((col) => (
+                        <TableHead key={col.key}>{col.label}</TableHead>
+                      ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -388,11 +463,13 @@ export default function Stage8() {
                       <TableCell className="font-mono text-xs sticky left-0 bg-white z-10">
                         {record.id || "-"}
                       </TableCell>
-                      {historyColumns.filter(c => selectedHistoryColumns.includes(c.key)).map(col => (
-                        <TableCell key={col.key}>
-                          {safeValue(record, col.key, true)}
-                        </TableCell>
-                      ))}
+                      {historyColumns
+                        .filter((c) => selectedHistoryColumns.includes(c.key))
+                        .map((col) => (
+                          <TableCell key={col.key}>
+                            {safeValue(record, col.key, true)}
+                          </TableCell>
+                        ))}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -413,26 +490,51 @@ export default function Stage8() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>QC Done By *</Label>
-                  <Select value={formData.qcBy} onValueChange={(v) => setFormData({ ...formData, qcBy: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select engineer" /></SelectTrigger>
+                  <Select
+                    value={formData.qcBy}
+                    onValueChange={(v) => setFormData({ ...formData, qcBy: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select engineer" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {QC_ENGINEERS.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                      {QC_ENGINEERS.map((n) => (
+                        <SelectItem key={n} value={n}>
+                          {n}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label>QC Date *</Label>
-                  <input type="date" className="w-full px-3 py-2 border rounded" value={formData.qcDate}
-                    onChange={e => setFormData({ ...formData, qcDate: e.target.value })} required />
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border rounded"
+                    value={formData.qcDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, qcDate: e.target.value })
+                    }
+                    required
+                  />
                 </div>
                 <div>
                   <Label>QC Status *</Label>
-                  <Select value={formData.qcStatus} onValueChange={(v) => setFormData({
-                    ...formData, qcStatus: v,
-                    rejectQty: v === "approved" ? "" : formData.rejectQty,
-                    rejectRemarks: v === "approved" ? "" : formData.rejectRemarks
-                  })}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <Select
+                    value={formData.qcStatus}
+                    onValueChange={(v) =>
+                      setFormData({
+                        ...formData,
+                        qcStatus: v,
+                        rejectQty: v === "approved" ? "" : formData.rejectQty,
+                        rejectRemarks:
+                          v === "approved" ? "" : formData.rejectRemarks,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="approved">Approved</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
@@ -441,8 +543,15 @@ export default function Stage8() {
                 </div>
                 <div>
                   <Label>Return Status *</Label>
-                  <Select value={formData.returnStatus} onValueChange={(v) => setFormData({ ...formData, returnStatus: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <Select
+                    value={formData.returnStatus}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, returnStatus: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="return">Return</SelectItem>
                       <SelectItem value="not return">Not Return</SelectItem>
@@ -453,17 +562,68 @@ export default function Stage8() {
 
               {formData.qcStatus === "rejected" && (
                 <div className="p-4 border rounded bg-red-50 space-y-3">
-                  <h3 className="font-semibold text-red-800">Rejection Details</h3>
+                  <h3 className="font-semibold text-red-800">
+                    Rejection Details
+                  </h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label>Reject Qty *</Label>
-                      <input type="number" className="w-full px-3 py-2 border rounded" placeholder="0"
-                        value={formData.rejectQty} onChange={e => setFormData({ ...formData, rejectQty: e.target.value })} required />
+                      <input
+                        type="number"
+                        className="w-full px-3 py-2 border rounded"
+                        placeholder="0"
+                        value={formData.rejectQty}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            rejectQty: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Reject Photo</Label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setFormData({ ...formData, rejectPhoto: file });
+                          }
+                        }}
+                        className="hidden"
+                        id="reject-photo"
+                      />
+                      <label
+                        htmlFor="reject-photo"
+                        className="flex items-center justify-center w-full p-2 border rounded cursor-pointer hover:bg-gray-50"
+                      >
+                        {formData.rejectPhoto ? (
+                          <span className="text-green-600">
+                            {" "}
+                            Photo Selected
+                          </span>
+                        ) : (
+                          <span> Upload Photo</span>
+                        )}
+                      </label>
                     </div>
                     <div className="col-span-2">
                       <Label>Reject Remarks *</Label>
-                      <textarea className="w-full px-3 py-2 border rounded resize-none" rows={3}
-                        value={formData.rejectRemarks} onChange={e => setFormData({ ...formData, rejectRemarks: e.target.value })} required />
+                      <textarea
+                        className="w-full px-3 py-2 border rounded resize-none"
+                        rows={3}
+                        value={formData.rejectRemarks}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            rejectRemarks: e.target.value,
+                          })
+                        }
+                        required
+                      />
                     </div>
                   </div>
                 </div>
@@ -471,14 +631,24 @@ export default function Stage8() {
 
               <div>
                 <Label>QC Remarks</Label>
-                <textarea className="w-full px-3 py-2 border rounded resize-none" rows={3}
-                  value={formData.qcRemarks} onChange={e => setFormData({ ...formData, qcRemarks: e.target.value })} />
+                <textarea
+                  className="w-full px-3 py-2 border rounded resize-none"
+                  rows={3}
+                  value={formData.qcRemarks}
+                  onChange={(e) =>
+                    setFormData({ ...formData, qcRemarks: e.target.value })
+                  }
+                />
               </div>
             </form>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={!isFormValid}>Complete QC</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={!isFormValid}>
+              Complete QC
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

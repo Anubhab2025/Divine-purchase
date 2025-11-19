@@ -301,16 +301,93 @@ const topMaterials = [
 ];
 
 const topVendors = [
-  { rank: 1, vendor: "JINDAL STEEL WORKS", qty: 18950.5 },
-  { rank: 2, vendor: "RASHMI METALIKS", qty: 14230.75 },
-  { rank: 3, vendor: "TATA METALIKS", qty: 8750.2 },
-  { rank: 4, vendor: "MAITHAN ALLOYS", qty: 7210.4 },
-  { rank: 5, vendor: "BHUSHAN TRADERS", qty: 4855.3 },
-  { rank: 6, vendor: "NEELACHAL ISPAT", qty: 3900.1 },
-  { rank: 7, vendor: "VANDANA STEELS", qty: 3200.8 },
-  { rank: 8, vendor: "IMFA LTD", qty: 2100.6 },
-  { rank: 9, vendor: "JAI BALAJI", qty: 1800.9 },
-  { rank: 10, vendor: "ELECTROSTEEL", qty: 1500.25 },
+  {
+    rank: 1,
+    vendor: "JINDAL STEEL WORKS",
+    qty: 18950.5,
+    price: 42500,
+    material: "MS Billet",
+  },
+  {
+    rank: 2,
+    vendor: "RASHMI METALIKS",
+    qty: 14230.75,
+    price: 41800,
+    material: "MS Billet",
+  },
+  {
+    rank: 3,
+    vendor: "TATA METALIKS",
+    qty: 8750.2,
+    price: 42200,
+    material: "Sponge Iron",
+  },
+  {
+    rank: 4,
+    vendor: "MAITHAN ALLOYS",
+    qty: 7210.4,
+    price: 42800,
+    material: "Ferro Chrome",
+  },
+  {
+    rank: 5,
+    vendor: "BHUSHAN TRADERS",
+    qty: 4855.3,
+    price: 41500,
+    material: "MS Scrap",
+  },
+  {
+    rank: 6,
+    vendor: "NEELACHAL ISPAT",
+    qty: 3900.1,
+    price: 42300,
+    material: "MS Billet",
+  },
+  {
+    rank: 7,
+    vendor: "VANDANA STEELS",
+    qty: 3200.8,
+    price: 42700,
+    material: "Sponge Iron",
+  },
+  {
+    rank: 8,
+    vendor: "IMFA LTD",
+    qty: 2100.6,
+    price: 42900,
+    material: "Ferro Chrome",
+  },
+  {
+    rank: 9,
+    vendor: "JAI BALAJI",
+    qty: 1800.9,
+    price: 41600,
+    material: "MS Scrap",
+  },
+  {
+    rank: 10,
+    vendor: "ELECTROSTEEL",
+    qty: 1500.25,
+    price: 43000,
+    material: "MS Billet",
+  },
+];
+
+// Define all purchase order stages with pending counts
+const purchaseStages = [
+  { id: 1, name: "Indent Approval", pending: 12, color: "bg-blue-500" },
+  { id: 2, name: "Update 3 Vendors", pending: 8, color: "bg-purple-500" },
+  { id: 3, name: "Negotiation", pending: 15, color: "bg-indigo-500" },
+  { id: 4, name: "PO Entry", pending: 6, color: "bg-cyan-500" },
+  { id: 5, name: "Follow-Up Vendor", pending: 10, color: "bg-teal-500" },
+  { id: 6, name: "Material Received", pending: 5, color: "bg-green-500" },
+  { id: 7, name: "QC Requirement", pending: 7, color: "bg-lime-500" },
+  { id: 8, name: "Receipt in Tally", pending: 4, color: "bg-amber-500" },
+  { id: 9, name: "Submit Invoice", pending: 9, color: "bg-orange-500" },
+  { id: 10, name: "Verification", pending: 11, color: "bg-red-500" },
+  { id: 11, name: "Vendor Payment", pending: 3, color: "bg-pink-500" },
+  { id: 12, name: "Purchase Return", pending: 2, color: "bg-rose-500" },
+  { id: 13, name: "Freight Payments", pending: 5, color: "bg-fuchsia-500" },
 ];
 
 const vendorBarData = topVendors.map((v) => ({
@@ -366,19 +443,30 @@ export default function PurchaseDashboard() {
   });
 
   // Sort states
-  const [inTransitSort, setInTransitSort] = useState({ key: "date", direction: "desc" });
-  const [receivedSort, setReceivedSort] = useState({ key: "date", direction: "desc" });
-  const [pendingSort, setPendingSort] = useState({ key: "erp", direction: "asc" });
+  const [inTransitSort, setInTransitSort] = useState({
+    key: "date",
+    direction: "desc",
+  });
+  const [receivedSort, setReceivedSort] = useState({
+    key: "date",
+    direction: "desc",
+  });
+  const [pendingSort, setPendingSort] = useState({
+    key: "erp",
+    direction: "asc",
+  });
 
   // Compute unique values for filters
   const allData = [...inTransitData, ...receivedData, ...pendingData];
-  const uniqueParties = [...new Set(allData.map(item => item.party))].sort();
-  const uniqueMaterials = [...new Set(allData.map(item => item.material))].sort();
+  const uniqueParties = [...new Set(allData.map((item) => item.party))].sort();
+  const uniqueMaterials = [
+    ...new Set(allData.map((item) => item.material)),
+  ].sort();
 
   // Helper function to parse date dd-mm-yyyy
   const parseDate = (dateStr: string) => {
     if (!dateStr) return null;
-    const [day, month, year] = dateStr.split('-').map(Number);
+    const [day, month, year] = dateStr.split("-").map(Number);
     return new Date(year, month - 1, day);
   };
 
@@ -400,13 +488,28 @@ export default function PurchaseDashboard() {
       }
 
       // Party filter
-      if (selectedParty && selectedParty !== "all" && item.party !== selectedParty) return false;
+      if (
+        selectedParty &&
+        selectedParty !== "all" &&
+        item.party !== selectedParty
+      )
+        return false;
 
       // Material filter
-      if (selectedMaterial && selectedMaterial !== "all" && item.material !== selectedMaterial) return false;
+      if (
+        selectedMaterial &&
+        selectedMaterial !== "all" &&
+        item.material !== selectedMaterial
+      )
+        return false;
 
       // Status filter
-      if (selectedStatus && selectedStatus !== "all" && selectedStatus !== dataType) return false;
+      if (
+        selectedStatus &&
+        selectedStatus !== "all" &&
+        selectedStatus !== dataType
+      )
+        return false;
 
       return true;
     });
@@ -445,10 +548,11 @@ export default function PurchaseDashboard() {
   // Apply search
   const searchData = (data: any[], searchTerm: string) => {
     if (!searchTerm) return data;
-    return data.filter((item: any) =>
-      item.erp.toString().includes(searchTerm.toLowerCase()) ||
-      item.material.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.party.toLowerCase().includes(searchTerm.toLowerCase())
+    return data.filter(
+      (item: any) =>
+        item.erp.toString().includes(searchTerm.toLowerCase()) ||
+        item.material.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.party.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
 
@@ -462,16 +566,18 @@ export default function PurchaseDashboard() {
 
     const headers = Object.keys(data[0]);
     const csvContent = [
-      headers.join(','),
-      ...data.map((row: any) => headers.map(header => `"${row[header]}"`).join(','))
-    ].join('\n');
+      headers.join(","),
+      ...data.map((row: any) =>
+        headers.map((header) => `"${row[header]}"`).join(",")
+      ),
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -483,13 +589,15 @@ export default function PurchaseDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Purchase Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Monitor and manage your purchase orders</p>
+          <p className="text-sm text-muted-foreground">
+            Monitor and manage your purchase orders
+          </p>
         </div>
-        <Button 
+        <Button
           onClick={() => {
             console.log("Forms button clicked");
             setFormsMenuOpen(true);
-          }} 
+          }}
           className="flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -519,7 +627,9 @@ export default function PurchaseDashboard() {
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
                 />
-                <span className="text-xs text-muted-foreground flex-shrink-0">to</span>
+                <span className="text-xs text-muted-foreground flex-shrink-0">
+                  to
+                </span>
                 <Input
                   placeholder="dd-mm-yyyy"
                   className="h-9 text-xs"
@@ -541,7 +651,10 @@ export default function PurchaseDashboard() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
+            <Select
+              value={selectedMaterial}
+              onValueChange={setSelectedMaterial}
+            >
               <SelectTrigger className="h-9 text-xs">
                 <SelectValue placeholder="All Materials" />
               </SelectTrigger>
@@ -657,7 +770,64 @@ export default function PurchaseDashboard() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Pending Items by Stage */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                Pending Items by Stage
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Track all pending items across different purchase stages
+              </p>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs w-[200px]">Stage</TableHead>
+                    <TableHead className="text-xs text-right w-[100px]">
+                      Pending
+                    </TableHead>
+                    <TableHead className="text-xs w-[200px]">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {purchaseStages.map((stage) => (
+                    <TableRow key={stage.id} className="hover:bg-gray-50">
+                      <TableCell className="text-xs font-medium">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-2 h-2 rounded-full ${stage.color}`}
+                          ></div>
+                          {stage.name}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant="outline" className="font-mono">
+                          {stage.pending}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="w-full bg-gray-100 rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full ${stage.color}`}
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                (stage.pending / 15) * 100
+                              )}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/*  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -699,8 +869,107 @@ export default function PurchaseDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+          */}
+          {/* BEST PRICE PER MATERIAL – NEW MODERN SECTION */}
+          <Card className="border-0 shadow-sm bg-white">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-emerald-600" />
+                    Best Price per Material
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Lowest rate offered by any vendor (Live Comparison)
+                  </p>
+                </div>
+                <Badge
+                  variant="secondary"
+                  className="bg-emerald-50 text-emerald-700"
+                >
+                  Smart Savings
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="space-y-3">
+                {(() => {
+                  // Group vendors by material and find the one with lowest rate
+                  const materialMap = new Map<string, any>();
 
-            <Card>
+                  // Use both topVendors and pendingData (which has rate) to get full coverage
+                  [...topVendors, ...pendingData].forEach((item: any) => {
+                    const key = item.material;
+                    if (!materialMap.has(key)) {
+                      materialMap.set(key, item);
+                    } else {
+                      const existing = materialMap.get(key);
+                      const existingRate = existing.rate || Infinity;
+                      const currentRate = item.rate || Infinity;
+                      if (currentRate < existingRate) {
+                        materialMap.set(key, item);
+                      }
+                    }
+                  });
+
+                  // Sort by savings potential (higher rate difference = more savings)
+                  const bestPrices = Array.from(materialMap.values())
+                    .filter((i: any) => i.rate) // Only items with rate
+                    .sort((a: any, b: any) => b.rate - a.rate)
+                    .slice(0, 8); // Top 8 for clean UI
+
+                  return bestPrices.length > 0 ? (
+                    bestPrices.map((item: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 hover:shadow-md transition-all duration-200"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {item.material}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-0.5">
+                              {item.party || item.vendor}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-emerald-700">
+                            ₹{item.rate?.toLocaleString() || "N/A"}
+                          </p>
+                          <p className="text-xs text-emerald-600 font-medium">
+                            per unit
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">
+                      No pricing data available yet
+                    </p>
+                  );
+                })()}
+              </div>
+
+              {/* Optional: Show total potential savings */}
+              <div className="mt-6 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Switching to best price could save
+                  </span>
+                  <span className="font-bold text-emerald-600 text-lg">
+                    Up to ₹12.4L/month
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          {/* <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium">
                   Top Materials
@@ -722,7 +991,9 @@ export default function PurchaseDashboard() {
                       >
                         {m.rank}
                       </Badge>
-                      <span className="truncate max-w-32 sm:max-w-none">{m.material}</span>
+                      <span className="truncate max-w-32 sm:max-w-none">
+                        {m.material}
+                      </span>
                     </div>
                     <span className="font-medium">{m.qty.toFixed(2)}</span>
                   </div>
@@ -733,9 +1004,7 @@ export default function PurchaseDashboard() {
 
           <Card className="lg:hidden">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                Top Vendors
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Top Vendors</CardTitle>
               <p className="text-xs text-muted-foreground">
                 Leading suppliers by order count
               </p>
@@ -760,9 +1029,7 @@ export default function PurchaseDashboard() {
 
           <Card className="hidden lg:block">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                Top Vendors
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Top Vendors</CardTitle>
               <p className="text-xs text-muted-foreground">
                 Leading suppliers by order count
               </p>
@@ -796,10 +1063,7 @@ export default function PurchaseDashboard() {
             </CardHeader>
             <CardContent className="space-y-2 text-xs">
               {topVendors.slice(0, 5).map((v) => (
-                <div
-                  key={v.rank}
-                  className="flex items-center justify-between"
-                >
+                <div key={v.rank} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge
                       variant="secondary"
@@ -814,6 +1078,101 @@ export default function PurchaseDashboard() {
                   <span className="font-medium">{v.qty.toFixed(2)}</span>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          {/* New Overview Table */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                Purchase Order Overview
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Detailed view of all purchase orders
+              </p>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Indent #</TableHead>
+                    <TableHead className="text-xs">Created By</TableHead>
+                    <TableHead className="text-xs">
+                      Warehouse Location
+                    </TableHead>
+                    <TableHead className="text-xs">Lead Time</TableHead>
+                    <TableHead className="text-xs">Category</TableHead>
+                    <TableHead className="text-xs">Item</TableHead>
+                    <TableHead className="text-xs text-right">Qty</TableHead>
+                    <TableHead className="text-xs">Exp. Delivery</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingData.map((item) => (
+                    <TableRow key={item.erp}>
+                      <TableCell className="text-xs">IND-{item.erp}</TableCell>
+                      <TableCell className="text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium">
+                            {item.party.charAt(0)}
+                          </div>
+                          <span>{item.party.split(" ")[0]}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {
+                          [
+                            "Mumbai",
+                            "Delhi",
+                            "Bangalore",
+                            "Hyderabad",
+                            "Kolkata",
+                          ][Math.floor(Math.random() * 5)]
+                        }
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {Math.floor(Math.random() * 10) + 5} days
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {item.material.split(" ")[0]}
+                      </TableCell>
+                      <TableCell className="text-xs">{item.material}</TableCell>
+                      <TableCell className="text-xs text-right">
+                        {item.qty.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {new Date(
+                          Date.now() +
+                            (Math.floor(Math.random() * 30) + 5) *
+                              24 *
+                              60 *
+                              60 *
+                              1000
+                        ).toLocaleDateString("en-IN")}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <Badge
+                          variant="outline"
+                          className={
+                            item.erp % 3 === 0
+                              ? "bg-green-50 text-green-700 border-green-200"
+                              : item.erp % 3 === 1
+                              ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                              : "bg-red-50 text-red-700 border-red-200"
+                          }
+                        >
+                          {item.erp % 3 === 0
+                            ? "In Progress"
+                            : item.erp % 3 === 1
+                            ? "Pending"
+                            : "Delayed"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -841,7 +1200,9 @@ export default function PurchaseDashboard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportToCSV(finalInTransitData, 'in-transit-data.csv')}
+              onClick={() =>
+                exportToCSV(finalInTransitData, "in-transit-data.csv")
+              }
               className="flex items-center justify-center gap-1"
             >
               <Download className="h-3 w-3" />
@@ -857,42 +1218,76 @@ export default function PurchaseDashboard() {
                   <TableRow>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setInTransitSort({
-                        key: "erp",
-                        direction: inTransitSort.key === "erp" && inTransitSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setInTransitSort({
+                          key: "erp",
+                          direction:
+                            inTransitSort.key === "erp" &&
+                            inTransitSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      ERP PO Number {inTransitSort.key === "erp" && (inTransitSort.direction === "asc" ? "↑" : "↓")}
+                      ERP PO Number{" "}
+                      {inTransitSort.key === "erp" &&
+                        (inTransitSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setInTransitSort({
-                        key: "material",
-                        direction: inTransitSort.key === "material" && inTransitSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setInTransitSort({
+                          key: "material",
+                          direction:
+                            inTransitSort.key === "material" &&
+                            inTransitSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      Material Name {inTransitSort.key === "material" && (inTransitSort.direction === "asc" ? "↑" : "↓")}
+                      Material Name{" "}
+                      {inTransitSort.key === "material" &&
+                        (inTransitSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setInTransitSort({
-                        key: "party",
-                        direction: inTransitSort.key === "party" && inTransitSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setInTransitSort({
+                          key: "party",
+                          direction:
+                            inTransitSort.key === "party" &&
+                            inTransitSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      Party Name {inTransitSort.key === "party" && (inTransitSort.direction === "asc" ? "↑" : "↓")}
+                      Party Name{" "}
+                      {inTransitSort.key === "party" &&
+                        (inTransitSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead className="text-xs">Truck No.</TableHead>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setInTransitSort({
-                        key: "date",
-                        direction: inTransitSort.key === "date" && inTransitSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setInTransitSort({
+                          key: "date",
+                          direction:
+                            inTransitSort.key === "date" &&
+                            inTransitSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      Date {inTransitSort.key === "date" && (inTransitSort.direction === "asc" ? "↑" : "↓")}
+                      Date{" "}
+                      {inTransitSort.key === "date" &&
+                        (inTransitSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
-                    <TableHead className="text-xs text-right">Quantity</TableHead>
+                    <TableHead className="text-xs text-right">
+                      Quantity
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -941,7 +1336,9 @@ export default function PurchaseDashboard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportToCSV(finalReceivedData, 'received-data.csv')}
+              onClick={() =>
+                exportToCSV(finalReceivedData, "received-data.csv")
+              }
               className="flex items-center justify-center gap-1"
             >
               <Download className="h-3 w-3" />
@@ -957,43 +1354,77 @@ export default function PurchaseDashboard() {
                   <TableRow>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setReceivedSort({
-                        key: "erp",
-                        direction: receivedSort.key === "erp" && receivedSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setReceivedSort({
+                          key: "erp",
+                          direction:
+                            receivedSort.key === "erp" &&
+                            receivedSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      ERP PO Number {receivedSort.key === "erp" && (receivedSort.direction === "asc" ? "↑" : "↓")}
+                      ERP PO Number{" "}
+                      {receivedSort.key === "erp" &&
+                        (receivedSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setReceivedSort({
-                        key: "material",
-                        direction: receivedSort.key === "material" && receivedSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setReceivedSort({
+                          key: "material",
+                          direction:
+                            receivedSort.key === "material" &&
+                            receivedSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      Material Name {receivedSort.key === "material" && (receivedSort.direction === "asc" ? "↑" : "↓")}
+                      Material Name{" "}
+                      {receivedSort.key === "material" &&
+                        (receivedSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setReceivedSort({
-                        key: "party",
-                        direction: receivedSort.key === "party" && receivedSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setReceivedSort({
+                          key: "party",
+                          direction:
+                            receivedSort.key === "party" &&
+                            receivedSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      Party Name {receivedSort.key === "party" && (receivedSort.direction === "asc" ? "↑" : "↓")}
+                      Party Name{" "}
+                      {receivedSort.key === "party" &&
+                        (receivedSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead className="text-xs">Bill Image</TableHead>
                     <TableHead className="text-xs">Truck No.</TableHead>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setReceivedSort({
-                        key: "date",
-                        direction: receivedSort.key === "date" && receivedSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setReceivedSort({
+                          key: "date",
+                          direction:
+                            receivedSort.key === "date" &&
+                            receivedSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      Date {receivedSort.key === "date" && (receivedSort.direction === "asc" ? "↑" : "↓")}
+                      Date{" "}
+                      {receivedSort.key === "date" &&
+                        (receivedSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
-                    <TableHead className="text-xs text-right">Quantity</TableHead>
+                    <TableHead className="text-xs text-right">
+                      Quantity
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1049,7 +1480,7 @@ export default function PurchaseDashboard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportToCSV(finalPendingData, 'pending-data.csv')}
+              onClick={() => exportToCSV(finalPendingData, "pending-data.csv")}
               className="flex items-center gap-1"
             >
               <Download className="h-3 w-3" />
@@ -1064,38 +1495,74 @@ export default function PurchaseDashboard() {
                   <TableRow>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setPendingSort({
-                        key: "erp",
-                        direction: pendingSort.key === "erp" && pendingSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setPendingSort({
+                          key: "erp",
+                          direction:
+                            pendingSort.key === "erp" &&
+                            pendingSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      ERP PO Number {pendingSort.key === "erp" && (pendingSort.direction === "asc" ? "↑" : "↓")}
+                      ERP PO Number{" "}
+                      {pendingSort.key === "erp" &&
+                        (pendingSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setPendingSort({
-                        key: "material",
-                        direction: pendingSort.key === "material" && pendingSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setPendingSort({
+                          key: "material",
+                          direction:
+                            pendingSort.key === "material" &&
+                            pendingSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      Material Name {pendingSort.key === "material" && (pendingSort.direction === "asc" ? "↑" : "↓")}
+                      Material Name{" "}
+                      {pendingSort.key === "material" &&
+                        (pendingSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
                     <TableHead
                       className="text-xs cursor-pointer hover:bg-gray-50"
-                      onClick={() => setPendingSort({
-                        key: "party",
-                        direction: pendingSort.key === "party" && pendingSort.direction === "asc" ? "desc" : "asc"
-                      })}
+                      onClick={() =>
+                        setPendingSort({
+                          key: "party",
+                          direction:
+                            pendingSort.key === "party" &&
+                            pendingSort.direction === "asc"
+                              ? "desc"
+                              : "asc",
+                        })
+                      }
                     >
-                      Party Name {pendingSort.key === "party" && (pendingSort.direction === "asc" ? "↑" : "↓")}
+                      Party Name{" "}
+                      {pendingSort.key === "party" &&
+                        (pendingSort.direction === "asc" ? "↑" : "↓")}
                     </TableHead>
-                    <TableHead className="text-xs text-right">Quantity</TableHead>
+                    <TableHead className="text-xs text-right">
+                      Quantity
+                    </TableHead>
                     <TableHead className="text-xs text-right">Rate</TableHead>
-                    <TableHead className="text-xs text-right">Pending Qty</TableHead>
-                    <TableHead className="text-xs text-right">Total Lifted</TableHead>
-                    <TableHead className="text-xs text-right">Total Received</TableHead>
-                    <TableHead className="text-xs text-right">Returned Qty</TableHead>
-                    <TableHead className="text-xs text-right">Order Cancel Qty</TableHead>
+                    <TableHead className="text-xs text-right">
+                      Pending Qty
+                    </TableHead>
+                    <TableHead className="text-xs text-right">
+                      Total Lifted
+                    </TableHead>
+                    <TableHead className="text-xs text-right">
+                      Total Received
+                    </TableHead>
+                    <TableHead className="text-xs text-right">
+                      Returned Qty
+                    </TableHead>
+                    <TableHead className="text-xs text-right">
+                      Order Cancel Qty
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1139,7 +1606,11 @@ export default function PurchaseDashboard() {
       </Tabs>
 
       {/* Debug - Remove after testing */}
-      {formsMenuOpen && <div className="fixed top-0 left-0 bg-red-500 text-white p-2 z-50">Modal State: OPEN</div>}
+      {formsMenuOpen && (
+        <div className="fixed top-0 left-0 bg-red-500 text-white p-2 z-50">
+          Modal State: OPEN
+        </div>
+      )}
 
       {/* Forms Menu Modal */}
       <Dialog open={formsMenuOpen} onOpenChange={setFormsMenuOpen}>
@@ -1159,7 +1630,9 @@ export default function PurchaseDashboard() {
               <Package className="w-8 h-8 text-blue-600" />
               <div className="text-left">
                 <div className="font-semibold">Item Form</div>
-                <div className="text-xs text-muted-foreground">Add new item details</div>
+                <div className="text-xs text-muted-foreground">
+                  Add new item details
+                </div>
               </div>
             </Button>
             <Button
@@ -1173,7 +1646,9 @@ export default function PurchaseDashboard() {
               <Users className="w-8 h-8 text-green-600" />
               <div className="text-left">
                 <div className="font-semibold">Vendor Form</div>
-                <div className="text-xs text-muted-foreground">Add new vendor details</div>
+                <div className="text-xs text-muted-foreground">
+                  Add new vendor details
+                </div>
               </div>
             </Button>
             <Button
@@ -1187,7 +1662,9 @@ export default function PurchaseDashboard() {
               <Truck className="w-8 h-8 text-orange-600" />
               <div className="text-left">
                 <div className="font-semibold">Transporter Form</div>
-                <div className="text-xs text-muted-foreground">Add new transporter details</div>
+                <div className="text-xs text-muted-foreground">
+                  Add new transporter details
+                </div>
               </div>
             </Button>
           </div>
@@ -1200,19 +1677,23 @@ export default function PurchaseDashboard() {
           <DialogHeader>
             <DialogTitle>Add New Item</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            console.log("Item Form:", itemForm);
-            setItemFormOpen(false);
-            setItemForm({ category: "", itemName: "", uom: "" });
-          }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              console.log("Item Form:", itemForm);
+              setItemFormOpen(false);
+              setItemForm({ category: "", itemName: "", uom: "" });
+            }}
+          >
             <div className="grid gap-4 py-4">
               <div>
                 <Label htmlFor="category">Category *</Label>
                 <Input
                   id="category"
                   value={itemForm.category}
-                  onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })}
+                  onChange={(e) =>
+                    setItemForm({ ...itemForm, category: e.target.value })
+                  }
                   required
                   placeholder="e.g. Electronics, Hardware"
                 />
@@ -1222,7 +1703,9 @@ export default function PurchaseDashboard() {
                 <Input
                   id="itemName"
                   value={itemForm.itemName}
-                  onChange={(e) => setItemForm({ ...itemForm, itemName: e.target.value })}
+                  onChange={(e) =>
+                    setItemForm({ ...itemForm, itemName: e.target.value })
+                  }
                   required
                   placeholder="e.g. Laptop, Screwdriver"
                 />
@@ -1248,7 +1731,11 @@ export default function PurchaseDashboard() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setItemFormOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setItemFormOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">Save Item</Button>
@@ -1263,19 +1750,29 @@ export default function PurchaseDashboard() {
           <DialogHeader>
             <DialogTitle>Add New Vendor</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            console.log("Vendor Form:", vendorForm);
-            setVendorFormOpen(false);
-            setVendorForm({ vendorName: "", contactPerson: "", phone: "", email: "", address: "" });
-          }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              console.log("Vendor Form:", vendorForm);
+              setVendorFormOpen(false);
+              setVendorForm({
+                vendorName: "",
+                contactPerson: "",
+                phone: "",
+                email: "",
+                address: "",
+              });
+            }}
+          >
             <div className="grid gap-4 py-4">
               <div>
                 <Label htmlFor="vendorName">Vendor Name *</Label>
                 <Input
                   id="vendorName"
                   value={vendorForm.vendorName}
-                  onChange={(e) => setVendorForm({ ...vendorForm, vendorName: e.target.value })}
+                  onChange={(e) =>
+                    setVendorForm({ ...vendorForm, vendorName: e.target.value })
+                  }
                   required
                   placeholder="e.g. ABC Suppliers"
                 />
@@ -1286,7 +1783,12 @@ export default function PurchaseDashboard() {
                   <Input
                     id="contactPerson"
                     value={vendorForm.contactPerson}
-                    onChange={(e) => setVendorForm({ ...vendorForm, contactPerson: e.target.value })}
+                    onChange={(e) =>
+                      setVendorForm({
+                        ...vendorForm,
+                        contactPerson: e.target.value,
+                      })
+                    }
                     required
                     placeholder="e.g. John Doe"
                   />
@@ -1296,7 +1798,9 @@ export default function PurchaseDashboard() {
                   <Input
                     id="phone"
                     value={vendorForm.phone}
-                    onChange={(e) => setVendorForm({ ...vendorForm, phone: e.target.value })}
+                    onChange={(e) =>
+                      setVendorForm({ ...vendorForm, phone: e.target.value })
+                    }
                     required
                     placeholder="e.g. 9876543210"
                   />
@@ -1308,7 +1812,9 @@ export default function PurchaseDashboard() {
                   id="email"
                   type="email"
                   value={vendorForm.email}
-                  onChange={(e) => setVendorForm({ ...vendorForm, email: e.target.value })}
+                  onChange={(e) =>
+                    setVendorForm({ ...vendorForm, email: e.target.value })
+                  }
                   placeholder="e.g. vendor@example.com"
                 />
               </div>
@@ -1317,7 +1823,9 @@ export default function PurchaseDashboard() {
                 <textarea
                   id="address"
                   value={vendorForm.address}
-                  onChange={(e) => setVendorForm({ ...vendorForm, address: e.target.value })}
+                  onChange={(e) =>
+                    setVendorForm({ ...vendorForm, address: e.target.value })
+                  }
                   required
                   rows={3}
                   className="w-full px-3 py-2 border rounded resize-none"
@@ -1326,7 +1834,11 @@ export default function PurchaseDashboard() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setVendorFormOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setVendorFormOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">Save Vendor</Button>
@@ -1341,19 +1853,31 @@ export default function PurchaseDashboard() {
           <DialogHeader>
             <DialogTitle>Add New Transporter</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            console.log("Transporter Form:", transporterForm);
-            setTransporterFormOpen(false);
-            setTransporterForm({ transporterName: "", contactPerson: "", phone: "", vehicleType: "" });
-          }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              console.log("Transporter Form:", transporterForm);
+              setTransporterFormOpen(false);
+              setTransporterForm({
+                transporterName: "",
+                contactPerson: "",
+                phone: "",
+                vehicleType: "",
+              });
+            }}
+          >
             <div className="grid gap-4 py-4">
               <div>
                 <Label htmlFor="transporterName">Transporter Name *</Label>
                 <Input
                   id="transporterName"
                   value={transporterForm.transporterName}
-                  onChange={(e) => setTransporterForm({ ...transporterForm, transporterName: e.target.value })}
+                  onChange={(e) =>
+                    setTransporterForm({
+                      ...transporterForm,
+                      transporterName: e.target.value,
+                    })
+                  }
                   required
                   placeholder="e.g. Fast Logistics"
                 />
@@ -1364,7 +1888,12 @@ export default function PurchaseDashboard() {
                   <Input
                     id="transporterContact"
                     value={transporterForm.contactPerson}
-                    onChange={(e) => setTransporterForm({ ...transporterForm, contactPerson: e.target.value })}
+                    onChange={(e) =>
+                      setTransporterForm({
+                        ...transporterForm,
+                        contactPerson: e.target.value,
+                      })
+                    }
                     required
                     placeholder="e.g. Jane Smith"
                   />
@@ -1374,7 +1903,12 @@ export default function PurchaseDashboard() {
                   <Input
                     id="transporterPhone"
                     value={transporterForm.phone}
-                    onChange={(e) => setTransporterForm({ ...transporterForm, phone: e.target.value })}
+                    onChange={(e) =>
+                      setTransporterForm({
+                        ...transporterForm,
+                        phone: e.target.value,
+                      })
+                    }
                     required
                     placeholder="e.g. 9876543210"
                   />
@@ -1384,7 +1918,9 @@ export default function PurchaseDashboard() {
                 <Label htmlFor="vehicleType">Vehicle Type *</Label>
                 <Select
                   value={transporterForm.vehicleType}
-                  onValueChange={(v) => setTransporterForm({ ...transporterForm, vehicleType: v })}
+                  onValueChange={(v) =>
+                    setTransporterForm({ ...transporterForm, vehicleType: v })
+                  }
                 >
                   <SelectTrigger id="vehicleType">
                     <SelectValue placeholder="Select Vehicle Type" />
@@ -1399,7 +1935,11 @@ export default function PurchaseDashboard() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setTransporterFormOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setTransporterFormOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">Save Transporter</Button>
